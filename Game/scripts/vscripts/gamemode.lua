@@ -1,148 +1,400 @@
--- This is the primary barebones gamemode script and should be used to assist in initializing your game mode
-
-
--- Set this to true if you want to see a complete debug output of all events/processes done by barebones
--- You can also change the cvar 'barebones_spew' at any time to 1 or 0 for output/no output
-BAREBONES_DEBUG_SPEW = false 
-
 if GameMode == nil then
-    DebugPrint( '[BAREBONES] creating barebones game mode' )
     _G.GameMode = class({})
 end
 
--- This library allow for easily delayed/timed actions
 require('libraries/timers')
--- This library can be used for advancted physics/motion/collision of units.  See PhysicsReadme.txt for more information.
 require('libraries/physics')
--- This library can be used for advanced 3D projectile systems.
 require('libraries/projectiles')
--- This library can be used for sending panorama notifications to the UIs of players/teams/everyone
 require('libraries/notifications')
--- This library can be used for starting customized animations on units from lua
 require('libraries/animations')
--- This library can be used for performing "Frankenstein" attachments on units
 require('libraries/attachments')
 
-
--- These internal libraries set up barebones's events and processes.  Feel free to inspect them/change them if you need to.
 require('internal/gamemode')
 require('internal/events')
 
--- settings.lua is where you can specify many different properties for your game mode and is one of the core barebones files.
 require('settings')
--- events.lua is where you can specify the actions to be taken when any event occurs and is one of the core barebones files.
 require('events')
+require("helper_functions")
 
---[[
-  This function should be used to set up Async precache calls at the beginning of the gameplay.
+require("constants")
+require("roles")
+require("modifiers")
+require("ability_helpers")
 
-  In this function, place all of your PrecacheItemByNameAsync and PrecacheUnitByNameAsync.  These calls will be made
-  after all players have loaded in, but before they have selected their heroes. PrecacheItemByNameAsync can also
-  be used to precache dynamically-added datadriven abilities instead of items.  PrecacheUnitByNameAsync will 
-  precache the precache{} block statement of the unit and all precache{} block statements for every Ability# 
-  defined on the unit.
+if roles == nil then
+  roles = {}
+end
+votes = {}
+current_stage = STAGE_DAY
+current_cycle = 1
 
-  This function should only be called once.  If you want to/need to precache more items/abilities/units at a later
-  time, you can call the functions individually (for example if you want to precache units in a new wave of
-  holdout).
+pre_resolution_stack = {}
+night_actions = {}
 
-  This function should generally only be used if the Precache() function in addon_game_mode.lua is not working.
-]]
+ability_data = LoadKeyValues("scripts/npc/npc_abilities_custom.txt")
+
 function GameMode:PostLoadPrecache()
-  DebugPrint("[BAREBONES] Performing Post-Load precache")    
-  --PrecacheItemByNameAsync("item_example_item", function(...) end)
-  --PrecacheItemByNameAsync("example_ability", function(...) end)
-
-  --PrecacheUnitByNameAsync("npc_dota_hero_viper", function(...) end)
-  --PrecacheUnitByNameAsync("npc_dota_hero_enigma", function(...) end)
 end
 
---[[
-  This function is called once and only once as soon as the first player (almost certain to be the server in local lobbies) loads in.
-  It can be used to initialize state that isn't initializeable in InitGameMode() but needs to be done before everyone loads in.
-]]
 function GameMode:OnFirstPlayerLoaded()
-  DebugPrint("[BAREBONES] First Player has loaded")
 end
 
---[[
-  This function is called once and only once after all players have loaded into the game, right as the hero selection time begins.
-  It can be used to initialize non-hero player state or adjust the hero selection (i.e. force random etc)
-]]
 function GameMode:OnAllPlayersLoaded()
-  DebugPrint("[BAREBONES] All Players have loaded into the game")
+  local setup = { "goon", "goon", "townie", "townie", "townie", "cop", "doctor" }
+  -- Distribute roles randomly
+  for _,player in pairs(GetPlayersOnTeam(DOTA_TEAM_GOODGUYS)) do
+    -- WHY DOESN'T LUA HAVE ARRAYS???
+    local role
+    local rolenum
+    repeat
+      rolenum = RandomInt(1,#setup)
+      role = setup[rolenum]
+    until role ~= "taken" or (#setup == 0)
+    roles[player] = role
+    setup[rolenum] = "taken"
+    player:MakeRandomHeroSelection()
+  end
+  PrintTable(roles)
 end
 
---[[
-  This function is called once and only once for every player when they spawn into the game for the first time.  It is also called
-  if the player's hero is replaced with a new hero for any reason.  This function is useful for initializing heroes, such as adding
-  levels, changing the starting gold, removing/adding abilities, adding physics, etc.
-
-  The hero parameter is the hero entity that just spawned in
-]]
 function GameMode:OnHeroInGame(hero)
-  DebugPrint("[BAREBONES] Hero spawned in game for first time -- " .. hero:GetUnitName())
-
-  -- This line for example will set the starting gold of every hero to 500 unreliable gold
-  hero:SetGold(500, false)
-
-  -- These lines will create an item and add it to the player, effectively ensuring they start with the item
-  local item = CreateItem("item_example_item", hero, hero)
-  hero:AddItem(item)
-
-  --[[ --These lines if uncommented will replace the W ability of any hero that loads into the game
-    --with the "example_ability" ability
-
-  local abil = hero:GetAbilityByIndex(1)
-  hero:RemoveAbility(abil:GetAbilityName())
-  hero:AddAbility("example_ability")]]
-end
-
---[[
-  This function is called once and only once when the game completely begins (about 0:00 on the clock).  At this point,
-  gold will begin to go up in ticks if configured, creeps will spawn, towers will become damageable etc.  This function
-  is useful for starting any game logic timers/thinkers, beginning the first round, etc.
-]]
-function GameMode:OnGameInProgress()
-  DebugPrint("[BAREBONES] The game has officially begun")
-
-  Timers:CreateTimer(30, -- Start this timer 30 game-time seconds later
-    function()
-      DebugPrint("This function is called 30 seconds after the game begins, and every 30 seconds thereafter")
-      return 30.0 -- Rerun this timer every 30 game-time seconds 
-    end)
-end
-
-
-
--- This function initializes the game mode and is called before anyone loads into the game
--- It can be used to pre-initialize any values/tables that will be needed later
-function GameMode:InitGameMode()
-  GameMode = self
-  DebugPrint('[BAREBONES] Starting to load Barebones gamemode...')
-
-  -- Call the internal function to set up the rules/behaviors specified in constants.lua
-  -- This also sets up event hooks for all event handlers in events.lua
-  -- Check out internals/gamemode to see/modify the exact code
-  GameMode:_InitGameMode()
-
-  -- Commands can be registered for debugging purposes or as functions that can be called by the custom Scaleform UI
-  Convars:RegisterCommand( "command_example", Dynamic_Wrap(GameMode, 'ExampleConsoleCommand'), "A console command example", FCVAR_CHEAT )
-
-  DebugPrint('[BAREBONES] Done loading Barebones gamemode!\n\n')
-end
-
--- This is an example console command
-function GameMode:ExampleConsoleCommand()
-  print( '******* Example Console Command ***************' )
-  local cmdPlayer = Convars:GetCommandClient()
-  if cmdPlayer then
-    local playerID = cmdPlayer:GetPlayerID()
-    if playerID ~= nil and playerID ~= -1 then
-      -- Do something here for the player who called this command
-      PlayerResource:ReplaceHeroWith(playerID, "npc_dota_hero_viper", 1000, 1000)
+  -- Remove this hero's standard abilities.
+  for i = 0,hero:GetAbilityCount() - 1 do
+    if hero:GetAbilityByIndex(i) then
+      hero:RemoveAbility(hero:GetAbilityByIndex(i):GetAbilityName())
     end
   end
 
-  print( '*********************************************' )
+  if roles[hero:GetPlayerOwner()] then
+    -- Grant the vote ability
+    hero:AddAbility("vote"):SetLevel(1)
+    -- Grant other abilities to this hero as appropriate
+    for k,ability in pairs(ROLE_DEFINITIONS[roles[hero:GetPlayerOwner()]].abilities) do
+      hero:AddAbility(ability):SetLevel(1)
+    end
+  end
+end
+
+function GameMode:OnGameInProgress()
+  for k,hero in pairs(HeroList:GetAllHeroes()) do
+    GameMode:OnHeroInGame(hero)
+  end
+end
+
+function GameMode:InitGameMode()
+  GameMode = self
+  GameMode:_InitGameMode()
+  Convars:RegisterCommand( "test", Dynamic_Wrap(GameMode, 'Test'), "Test", FCVAR_CHEAT )
+  Convars:RegisterCommand( "eval", Dynamic_Wrap(GameMode, 'Eval'), "Eval", FCVAR_CHEAT )
+  Convars:RegisterCommand( "update_abilities", Dynamic_Wrap(GameMode, 'UpdateAbilities'), "Update abilities", FCVAR_CHEAT )
+end
+
+function GameMode:Test()
+  --local player = PlayerResource:GetPlayer(0)
+  --night_actions[player] = player:GetAssignedHero():FindAbilityByName("mafia_kill")
+  GameMode:EnterDawn(0)
+end
+
+function GameMode:Eval(string)
+  print("Evaluating: " .. string)
+  local f = loadstring(string)
+  print(f())
+end
+
+function GameMode:UpdateAbilities()
+  SendToConsole("script_reload")
+  SendToConsole("cl_script_reload")
+  for k,hero in pairs(HeroList:GetAllHeroes()) do
+    PlayerResource:ReplaceHeroWith(hero:GetPlayerID(), hero:GetClassname(), PlayerResource:GetGold(hero:GetPlayerID()), hero:GetCurrentXP())
+    hero:Destroy()
+  end
+end
+
+function GameMode:ChangeVote(player, target)
+  votes[player] = target
+  CustomGameEventManager:Send_ServerToAllClients("update_votes", {votes = votes})
+
+  -- See if we have reached a lynch
+  local living_player_count = 0
+  for player,role in pairs(roles) do
+    if player:GetAssignedHero():IsAlive() then
+      living_player_count = living_player_count + 1
+    end
+  end
+  local votes_to_lynch = math.ceil(living_player_count / 2)
+  if votes_to_lynch == living_player_count / 2 then
+    votes_to_lynch = votes_to_lynch + 1
+  end
+  print(living_player_count .. " alive, " .. votes_to_lynch .. " to lynch")
+  PrintTable(votes)
+  vote_counts = {}
+  for voter,vote in pairs(votes) do
+    if vote_counts[vote] then
+      vote_counts[vote] = vote_counts[vote] + 1
+    else
+      vote_counts[vote] = 1
+    end
+    if vote_counts[vote] >= votes_to_lynch then
+      GameMode:ChangeStage(STAGE_TWILIGHT, current_cycle, {lynchee = vote})
+      break
+    end
+  end
+end
+
+function GameMode:ChangeStage(stage, cycle, options)
+  print("Changing stage to " .. stage)
+  CustomGameEventManager:Send_ServerToAllClients("stage_change", {stage = stage, cycle = cycle, options = options})
+  current_stage = stage
+  current_cycle = cycle
+  if stage == STAGE_TWILIGHT then
+    GameMode:EnterTwilight(options.lynchee)
+  elseif stage == STAGE_NIGHT then
+    GameMode:EnterNight()
+  elseif stage == STAGE_DAWN then
+    GameMode:EnterDawn()
+  elseif stage == STAGE_DAY then
+    GameMode:EnterDay()
+  end
+end
+
+function GameMode:EnterTwilight(lynchee)
+  if lynchee then
+    CustomGameEventManager:Send_ServerToAllClients("player_will_be_lynched", {lynchee = lynchee})
+    print("Lynching " .. tostring(lynchee))
+    Timers:CreateTimer("primary_timer", {
+      endTime = STAGE_LENGTH_TWILIGHT, 
+      callback = function()
+        lynchee:GetAssignedHero():ForceKill(false)
+        Timers:CreateTimer("primary_timer", {
+          endTime = 5,
+          callback = function()
+            GameMode:ChangeStage(STAGE_NIGHT, current_cycle)
+          end
+        })
+      end
+    })
+  else
+    CustomGameEventManager:Send_ServerToAllClients("no_lynch", {})
+    Timers:CreateTimer("primary_timer", {
+      endTime = STAGE_LENGTH_TWILIGHT,
+      callback = function()
+        GameMode:ChangeStage(STAGE_NIGHT, current_cycle)
+      end
+    })
+  end
+  GameRules:SetTimeOfDay(0)
+end
+
+function GameMode:EnterNight()
+  GameRules:SetTimeOfDay(0)
+  pre_resolution_stack = {}
+  night_actions = {}
+  -- Wait for night actions.
+
+  Timers:CreateTimer("primary_timer", {
+    endTime = STAGE_LENGTH_NIGHT, 
+    callback = function()
+      GameMode:ChangeStage(STAGE_DAWN, current_cycle + 1)
+    end
+  })
+end
+
+function GameMode:EnterDawn()
+  GameRules:SetTimeOfDay(0.5)
+  -- Action resolution begins.
+  -- Start by adding things on the pre-resolution stack (mainly factional kills) to the night actions table.
+  for name,details in pairs(pre_resolution_stack) do
+    if name == "mafia_kill" then
+      night_actions[details.killer] = details.ability
+    end
+  end
+
+  local events = {}
+  local results = {}
+
+  -- This action resolution basically adheres to Natural Action Resolution:
+  -- http://wiki.mafiascum.net/index.php?title=Natural_Action_Resolution
+
+  -- Loop through night actions... possibly several times depending on the complexity of the setup.
+  while next(night_actions) do
+    print("Top level while loop")
+    local actions_checked = 0
+    local actions_skipped = 0
+    -- Loop through each night action.
+    for player,ability in pairs(night_actions) do
+      print("Main loop through actions")
+      print("Checking " .. player:GetPlayerID() .. "'s use of " .. ability:GetName())
+      actions_checked = actions_checked + 1
+      -- Configure skip types based on the action being checked.
+      -- For example, if we're checking to resolve a kill, we need to make sure that there is not a pending
+      -- protect action on its target that hasn't been resolved. We also need to make sure that there aren't pending
+      -- blocks, redirects, or other relevant acitons on the actor.
+      local skip = false
+      local skip_if_pending_on_actor = {ACTION_TYPE_BLOCK = true}
+      local skip_if_pending_on_target = {}
+      if ability.action_types[ACTION_TYPE_KILL] then
+        skip_if_pending_on_target[ACTION_TYPE_PROTECT] = true
+      end
+      if ability.action_types[ACTION_TYPE_BLOCK] then
+        skip_if_pending_on_target[ACTION_TYPE_BLOCK] = nil
+      end
+      
+      -- Skip this action if the target has one of the skip types we decided on above.
+      for actiontype,v in pairs(skip_if_pending_on_target) do
+        for pplayer,pability in pairs(night_actions) do
+          if pability.target == ability.target and pability.action_types[actiontype] then
+            skip = true
+          end
+        end
+      end
+
+      -- Skip this action if the actor has one of the skip types we decided on above.
+      for actiontype,v in pairs(skip_if_pending_on_actor) do
+        for pplayer,pability in pairs(night_actions) do
+          if pability.target == player and pability.action_types[actiontype] then
+            skip = true
+          end
+        end
+      end
+
+      if not skip then
+        print("Resolving this action")
+        -- Resolve action, first checking to be sure that we aren't roleblocked.
+        if not player:GetAssignedHero():HasModifier("modifier_roleblocked") or ability_data[ability].IsUnblockable then
+          local resolution = ability:Resolve()  -- Defined in each ability.
+          if resolution then
+            print("Received resolution:")
+            PrintTable(resolution)
+            -- Three possible kinds of resolutions:
+            -- RESOLUTION_TYPE_RESULT -- displayed to a single player at the start of the day, e.g. investigate
+            -- RESOLUTION_TYPE_EVENT -- displayed publicly at the start of the day, e.g. nightkill
+            -- Nothing -- displays nothing (but doesn't necessarily do nothing!), e.g. protect
+            if resolution.type == RESOLUTION_TYPE_RESULT then
+              if results[player] then
+                table.insert(results[player], resolution.info)
+              else
+                results[player] = {resolution.event}
+              end
+            else
+              table.insert(events, resolution.followthrough)
+            end
+          end
+        else
+          -- This action was blocked; but, if it was an action that returns a result, we still need to send
+          -- a "no result" result to the actor.
+          if ability.inform_on_failure then
+            if results[player] then
+              table.insert(results[player], {eventname = "no_result", eventinfo = {}})
+            else
+              results[player] = {{eventname = "no_result", eventinfo = {}}}
+            end
+          end
+        end
+        night_actions[player] = nil
+      else
+        print("Skipping this action due to other pending actions that potentially affect it")
+        actions_skipped = actions_skipped + 1
+      end
+    end
+
+    -- If we skipped every action due to other pending actions, we've found our way into an infinite loop.
+    -- We need to fall back on a hard-coded order of actions.
+    if actions_checked == actions_skipped then
+      -- TODO: Tiebreaker resolution
+      break
+    end
+  end
+  print("==========")
+  print("Events:")
+  PrintTable(events)
+  print("Results:")
+  PrintTable(results)
+  print("==========")
+
+  -- Send results to players.
+  for player,tbl in pairs(results) do
+    for _,result in pairs(tbl) do
+      CustomGameEventManager:Send_ServerToPlayer(player, result.eventname, result.eventinfo)
+    end
+  end
+
+  Timers:CreateTimer("primary_timer", {
+    endTime = STAGE_LENGTH_DAWN,
+    callback = function()
+      if next(events) then
+        -- Show events (mostly nightkills).
+        for k,event in pairs(events) do
+          event()
+          events[k] = nil
+          return 5
+        end
+      else
+        -- Cock a doodle doo!
+        GameMode:ChangeStage(STAGE_DAY, current_cycle)
+      end
+    end
+  })
+end
+
+function GameMode:EnterDay()
+  GameRules:SetTimeOfDay(0.25)
+  votes = {}
+  Timers:CreateTimer("primary_timer", {
+    endTime = STAGE_LENGTH_DAY,
+    callback = function()
+      GameMode:ChangeStage(STAGE_TWILIGHT, current_cycle, {})
+    end
+  })
+end
+
+function GameMode:GetPlayersByAlignment(include_dead)
+  local players = {}
+  for player,role in pairs(roles) do
+    local align = ROLE_DEFINITIONS[role].alignment
+    if player:GetAssignedHero():IsAlive() or include_dead then
+      if players[align] then
+        table.insert(players[align], player)
+      else
+        players[align] = {player}
+      end
+    end
+  end
+  return players
+end
+
+function GameMode:GetAllPlayersWithAlignment(alignment, include_dead)
+  local players = {}
+  for player,role in pairs(roles) do
+    if ROLE_DEFINITIONS[role].alignment == alignment and (include_dead or player:GetAssignedHero():IsAlive()) then
+      table.insert(players, player)
+    end
+  end
+  return players
+end
+
+function GameMode:GetPlayerAlignment(player)
+  return ROLE_DEFINITIONS[roles[player]].alignment
+end
+
+function GameMode:CheckVictory()
+  local alignments = GameMode:GetPlayersByAlignment(false)
+  if not alignments[ALIGNMENT_MAFIA] then
+    print("Town wins!")
+  else
+    local total_living = 0
+    local counts = {}
+    for alignment,players in pairs(alignments) do
+      for k,player in pairs(players) do
+        if counts[alignment] then
+          counts[alignment] = counts[alignment] + 1
+        else
+          counts[alignment] = 1
+        end
+        total_living = total_living + 1
+      end
+    end
+    if counts[ALIGNMENT_MAFIA] >= total_living / 2 then
+      print("Mafia wins!")
+    end
+  end
 end

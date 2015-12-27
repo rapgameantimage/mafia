@@ -1,5 +1,5 @@
 function DebugPrint(...)
-  local spew = Convars:GetInt('barebones_spew') or -1
+  local spew = -1
   if spew == -1 and BAREBONES_DEBUG_SPEW then
     spew = 1
   end
@@ -10,7 +10,7 @@ function DebugPrint(...)
 end
 
 function DebugPrintTable(...)
-  local spew = Convars:GetInt('barebones_spew') or -1
+  local spew = -1
   if spew == -1 and BAREBONES_DEBUG_SPEW then
     spew = 1
   end
@@ -33,7 +33,7 @@ function PrintTable(t, indent, done)
     table.insert(l, k)
   end
 
-  table.sort(l)
+  --table.sort(l)
   for k, v in ipairs(l) do
     -- Ignore FDesc
     if v ~= 'FDesc' then

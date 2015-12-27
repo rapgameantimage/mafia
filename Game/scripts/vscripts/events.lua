@@ -240,9 +240,7 @@ function GameMode:OnEntityKilled( keys )
     killerAbility = EntIndexToHScript( keys.entindex_inflictor )
   end
 
-  local damagebits = keys.damagebits -- This might always be 0 and therefore useless
-
-  -- Put code here to handle when an entity gets killed
+  GameMode:CheckVictory()
 end
 
 
