@@ -5,11 +5,11 @@ investigate.inform_on_failure = true
 
 function investigate:CastFilterResultTarget(target)
 	if not IsServer() then return end
-	return GameMode:GenericAbilityCastFilter(self)
+	return GameMode:GenericAbilityCastFilter(self, target)
 end
 
 function investigate:GetCustomCastErrorTarget(target)
-	return GameMode:GenericAbilityCastError(self)
+	return GameMode:GenericAbilityCastError(self, target)
 end
 
 function investigate:OnSpellStart()
@@ -36,7 +36,7 @@ function investigate:Resolve()
 		event = {
 			eventname = "result_investigation",
 			eventinfo = {
-				target = self.target,
+				target = self.target:GetPlayerID(),
 				result = result
 			}
 		}

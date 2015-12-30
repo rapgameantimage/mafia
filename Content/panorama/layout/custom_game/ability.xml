@@ -1,0 +1,10 @@
+<root>
+	<styles>
+		<include src="file://{resources}/styles/custom_game/ability.css" />
+		<include src="file://{resources}/styles/dotastyles.css" />
+	</styles>
+	<Panel class="ability" onmouseover="ShowAbilityTooltip()" onmouseout="HideAbilityTooltip()">
+		<Panel class="ability-button" />
+		<Label class="ability-name" />
+	</Panel>
+</root>

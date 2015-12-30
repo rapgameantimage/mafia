@@ -52,12 +52,13 @@ function GameMode:OnAllPlayersLoaded()
     until role ~= "taken" or (#setup == 0)
     roles[player] = role
     setup[rolenum] = "taken"
-    player:MakeRandomHeroSelection()
+    CustomGameEventManager:Send_ServerToPlayer(player, "distribute_role", {role = role, alignment = ROLE_DEFINITIONS[role].alignment})
   end
   PrintTable(roles)
 end
 
 function GameMode:OnHeroInGame(hero)
+  PlayerResource:SetOverrideSelectionEntity(hero:GetPlayerOwnerID(), hero)  -- thank you based Noya for suggesting the use of this function.
   -- Remove this hero's standard abilities.
   for i = 0,hero:GetAbilityCount() - 1 do
     if hero:GetAbilityByIndex(i) then
@@ -68,6 +69,8 @@ function GameMode:OnHeroInGame(hero)
   if roles[hero:GetPlayerOwner()] then
     -- Grant the vote ability
     hero:AddAbility("vote"):SetLevel(1)
+    hero:AddAbility("unvote"):SetLevel(1)
+    hero:SetAbilityPoints(0)
     -- Grant other abilities to this hero as appropriate
     for k,ability in pairs(ROLE_DEFINITIONS[roles[hero:GetPlayerOwner()]].abilities) do
       hero:AddAbility(ability):SetLevel(1)
@@ -76,9 +79,23 @@ function GameMode:OnHeroInGame(hero)
 end
 
 function GameMode:OnGameInProgress()
-  for k,hero in pairs(HeroList:GetAllHeroes()) do
-    GameMode:OnHeroInGame(hero)
+  for _,player in pairs(GetPlayersOnTeam(DOTA_TEAM_GOODGUYS)) do
+    if PlayerResource:GetSteamAccountID(player:GetPlayerID()) == 0 then
+      local heroname = PlayerResource:GetSelectedHeroName(player:GetPlayerID())
+      print("Recreating " .. heroname .. " for " .. player:GetPlayerID())
+      local oldhero = player:GetAssignedHero()
+      local replaced = PlayerResource:ReplaceHeroWith(player:GetPlayerID(), heroname, 0, 0)
+      if not replaced then
+        CreateHeroForPlayer(heroname, player)
+      end
+      oldhero:RemoveSelf()
+    else
+      player:MakeRandomHeroSelection()
+    end
   end
+  Timers:CreateTimer(5, function()
+    GameMode:ChangeStage(STAGE_DAY, 1)
+  end)
 end
 
 function GameMode:InitGameMode()
@@ -87,12 +104,13 @@ function GameMode:InitGameMode()
   Convars:RegisterCommand( "test", Dynamic_Wrap(GameMode, 'Test'), "Test", FCVAR_CHEAT )
   Convars:RegisterCommand( "eval", Dynamic_Wrap(GameMode, 'Eval'), "Eval", FCVAR_CHEAT )
   Convars:RegisterCommand( "update_abilities", Dynamic_Wrap(GameMode, 'UpdateAbilities'), "Update abilities", FCVAR_CHEAT )
+  Convars:RegisterCommand( "alohamora", Dynamic_Wrap(GameMode, 'UnlockSelection'), "wizard shit", FCVAR_CHEAT )
+
+  CustomGameEventManager:RegisterListener("get_role", Dynamic_Wrap(GameMode, 'SendRoleToClient'))
 end
 
 function GameMode:Test()
-  --local player = PlayerResource:GetPlayer(0)
-  --night_actions[player] = player:GetAssignedHero():FindAbilityByName("mafia_kill")
-  GameMode:EnterDawn(0)
+  CustomGameEventManager:Send_ServerToAllClients("endgame_reveal", event)
 end
 
 function GameMode:Eval(string)
@@ -110,23 +128,20 @@ function GameMode:UpdateAbilities()
   end
 end
 
+function GameMode:UnlockSelection()
+  PlayerResource:SetOverrideSelectionEntity(0, nil)
+end
+
 function GameMode:ChangeVote(player, target)
   votes[player] = target
-  CustomGameEventManager:Send_ServerToAllClients("update_votes", {votes = votes})
+  local votes_for_event = {}
+  for player,vote in pairs(votes) do
+    votes_for_event[player:GetPlayerID()] = vote:GetPlayerID()
+  end
+  CustomGameEventManager:Send_ServerToAllClients("update_votes", {votes = votes_for_event, votes_to_lynch = GameMode:GetVotesToLynch()})
 
   -- See if we have reached a lynch
-  local living_player_count = 0
-  for player,role in pairs(roles) do
-    if player:GetAssignedHero():IsAlive() then
-      living_player_count = living_player_count + 1
-    end
-  end
-  local votes_to_lynch = math.ceil(living_player_count / 2)
-  if votes_to_lynch == living_player_count / 2 then
-    votes_to_lynch = votes_to_lynch + 1
-  end
-  print(living_player_count .. " alive, " .. votes_to_lynch .. " to lynch")
-  PrintTable(votes)
+  local votes_to_lynch = GameMode:GetVotesToLynch()
   vote_counts = {}
   for voter,vote in pairs(votes) do
     if vote_counts[vote] then
@@ -135,6 +150,7 @@ function GameMode:ChangeVote(player, target)
       vote_counts[vote] = 1
     end
     if vote_counts[vote] >= votes_to_lynch then
+      CustomGameEventManager:Send_ServerToAllClients("player_will_be_lynched", {lynchee = vote:GetPlayerID(), votes = votes_for_event})
       GameMode:ChangeStage(STAGE_TWILIGHT, current_cycle, {lynchee = vote})
       break
     end
@@ -143,7 +159,10 @@ end
 
 function GameMode:ChangeStage(stage, cycle, options)
   print("Changing stage to " .. stage)
-  CustomGameEventManager:Send_ServerToAllClients("stage_change", {stage = stage, cycle = cycle, options = options})
+  Timers:RemoveTimer("stage_tick_timer")
+  last_stage_change = GameRules:GetGameTime()
+  local stage_change_event = {stage = stage, cycle = cycle, options = options, votes_to_lynch = GameMode:GetVotesToLynch()}
+  CustomGameEventManager:Send_ServerToAllClients("stage_change", stage_change_event)
   current_stage = stage
   current_cycle = cycle
   if stage == STAGE_TWILIGHT then
@@ -159,18 +178,41 @@ end
 
 function GameMode:EnterTwilight(lynchee)
   if lynchee then
-    CustomGameEventManager:Send_ServerToAllClients("player_will_be_lynched", {lynchee = lynchee})
-    print("Lynching " .. tostring(lynchee))
+    EmitGlobalSound("Mafia.Lynch_Bell")
+    local hero = lynchee:GetAssignedHero()
     Timers:CreateTimer("primary_timer", {
       endTime = STAGE_LENGTH_TWILIGHT, 
       callback = function()
-        lynchee:GetAssignedHero():ForceKill(false)
+        CustomGameEventManager:Send_ServerToAllClients("begin_lynch", {})
+        lynch_in_progress = true
+        GameMode:FocusCameras(hero)
+        StartSoundEvent("Hero_Necrolyte.ReapersScythe.Cast", hero)
+        local p = ParticleManager:CreateParticle("particles/units/heroes/hero_necrolyte/necrolyte_scythe_start.vpcf", PATTACH_ABSORIGIN_FOLLOW, hero)
+        ParticleManager:SetParticleControl(p, 1, hero:GetAbsOrigin())
+        ParticleManager:CreateParticle("particles/units/heroes/hero_necrolyte/necrolyte_scythe.vpcf", PATTACH_ABSORIGIN_FOLLOW, hero)
+
         Timers:CreateTimer("primary_timer", {
-          endTime = 5,
+          endTime = 1.5,
           callback = function()
-            GameMode:ChangeStage(STAGE_NIGHT, current_cycle)
+            StartSoundEvent("Hero_Necrolyte.ReapersScythe.Target", hero)
+            CustomGameEventManager:Send_ServerToAllClients("finish_lynch", {})
+            hero:ForceKill(false)
+            GameMode:FocusCameras(nil)
+
+            Timers:CreateTimer(1.5, function() 
+              CustomGameEventManager:Send_ServerToAllClients("flip_player", GameMode:GetFlip(lynchee:GetPlayerID()))
+            end)
+            Timers:CreateTimer("primary_timer", {
+              endTime = 8,
+              callback = function()
+                lynch_in_progress = nil
+                GameMode:ChangeStage(STAGE_NIGHT, current_cycle)
+              end
+            })
+
           end
         })
+
       end
     })
   else
@@ -182,7 +224,6 @@ function GameMode:EnterTwilight(lynchee)
       end
     })
   end
-  GameRules:SetTimeOfDay(0)
 end
 
 function GameMode:EnterNight()
@@ -191,6 +232,13 @@ function GameMode:EnterNight()
   night_actions = {}
   -- Wait for night actions.
 
+  Timers:CreateTimer("stage_tick_timer", {
+    endTime = 0.1,
+    callback = function()
+      CustomGameEventManager:Send_ServerToAllClients("stage_tick", {elapsed = GameRules:GetGameTime() - last_stage_change, duration = STAGE_LENGTH_NIGHT})
+      return 0.1
+    end
+  })
   Timers:CreateTimer("primary_timer", {
     endTime = STAGE_LENGTH_NIGHT, 
     callback = function()
@@ -339,6 +387,21 @@ end
 function GameMode:EnterDay()
   GameRules:SetTimeOfDay(0.25)
   votes = {}
+  CustomGameEventManager:Send_ServerToAllClients("update_votes", {votes = {}, votes_to_lynch = GameMode:GetVotesToLynch()})
+
+  for k,hero in pairs(HeroList:GetAllHeroes()) do
+    for j,modifier in pairs(mafia_game_modifiers) do
+      hero:RemoveModifierByName(modifier)
+    end
+  end
+
+  Timers:CreateTimer("stage_tick_timer", {
+    endTime = 0.25,
+    callback = function()
+      CustomGameEventManager:Send_ServerToAllClients("stage_tick", {elapsed = GameRules:GetGameTime() - last_stage_change, duration = STAGE_LENGTH_DAY})
+      return 0.25
+    end
+  })
   Timers:CreateTimer("primary_timer", {
     endTime = STAGE_LENGTH_DAY,
     callback = function()
@@ -379,7 +442,7 @@ end
 function GameMode:CheckVictory()
   local alignments = GameMode:GetPlayersByAlignment(false)
   if not alignments[ALIGNMENT_MAFIA] then
-    print("Town wins!")
+    GameMode:VictoryFor(ALIGNMENT_TOWN)
   else
     local total_living = 0
     local counts = {}
@@ -394,7 +457,101 @@ function GameMode:CheckVictory()
       end
     end
     if counts[ALIGNMENT_MAFIA] >= total_living / 2 then
-      print("Mafia wins!")
+      GameMode:VictoryFor(ALIGNMENT_MAFIA)
     end
+  end
+end
+
+function GameMode:VictoryFor(alignment)
+  Timers:CreateTimer(4, function()
+    GameRules:SetCustomVictoryMessage("")
+    GameRules:SetCustomVictoryMessageDuration(0)
+    GameRules:SetGameWinner(DOTA_TEAM_GOODGUYS)
+    GameRules:SetCustomGameEndDelay(0)
+    local event = {}
+    event.winning_alignment = alignment
+    event.roles = {}
+    for player,role in pairs(roles) do
+      event.roles[player:GetPlayerID()] = {
+        role = roles[player],
+        alignment = GameMode:GetPlayerAlignment(player)
+      }
+    end
+    PrintTable(event)
+    CustomNetTables:SetTableValue("endgame", "data", event)
+  end)
+end
+
+function GameMode:GetVotesToLynch()
+  local living_player_count = 0
+  for player,role in pairs(roles) do
+    if player:GetAssignedHero() and player:GetAssignedHero():IsAlive() then
+      living_player_count = living_player_count + 1
+    end
+  end
+  local votes_to_lynch = math.ceil(living_player_count / 2)
+  if votes_to_lynch == living_player_count / 2 then
+    votes_to_lynch = votes_to_lynch + 1
+  end
+  return votes_to_lynch
+end
+
+function GameMode:SendRoleToClient(ev)
+  local player = PlayerResource:GetPlayer(ev.PlayerID)
+  local alignment = GameMode:GetPlayerAlignment(player)
+  local response = {
+    role = roles[player],
+    alignment = alignment
+  }
+
+  if alignment == ALIGNMENT_MAFIA or alignment == ALIGNMENT_WEREWOLVES then
+    local thisalign = GameMode:GetAllPlayersWithAlignment(alignment)
+    local allies = {}
+    for k,p in pairs(thisalign) do
+      if p ~= player then
+        table.insert(allies, p:GetPlayerID())
+      end
+    end
+    response.allies = allies
+  end
+
+  CustomGameEventManager:Send_ServerToPlayer(player, "distribute_role", response)
+end
+
+function GameMode:SendFlipToClient(ev)
+  CustomGameEventManager:Send_ServerToPlayer(ev.PlayerID, "flip_player", GameMode:GetFlip(tonumber(ev.requested_player)))
+end
+
+function GameMode:GetFlip(playerid)
+  local player = PlayerResource:GetPlayer(playerid)
+  if player:GetAssignedHero():IsAlive() then
+    print("Flip rejected because player " .. PlayerResource:GetPlayerName(playerid) .. " is still alive")
+    return {}
+  end
+
+  local flip = {
+    playerID = playerid,
+    role = roles[player],
+    alignment = GameMode:GetPlayerAlignment(player)
+  }
+  return flip
+end
+
+function GameMode:Nightkill(player)
+  GameMode:FocusCameras(player:GetAssignedHero())
+  Timers:CreateTimer(1, function()
+    CustomGameEventManager:Send_ServerToAllClients("nightkill", {player = player:GetPlayerID(), role = roles[player], alignment = GameMode:GetPlayerAlignment(player)})
+    local hero = player:GetAssignedHero()
+    local blood = ParticleManager:CreateParticle("particles/units/heroes/hero_phantom_assassin/phantom_assassin_crit_impact.vpcf", PATTACH_ABSORIGIN_FOLLOW, hero)
+    ParticleManager:SetParticleControl(blood, 1, hero:GetAbsOrigin())
+    hero:EmitSound("Hero_PhantomAssassin.CoupDeGrace")
+    hero:ForceKill(false)
+    GameMode:FocusCameras(nil)
+  end)
+end
+
+function GameMode:FocusCameras(target)
+  for k,player in pairs(GetPlayersOnTeam(DOTA_TEAM_GOODGUYS)) do
+    PlayerResource:SetCameraTarget(player:GetPlayerID(), target)
   end
 end

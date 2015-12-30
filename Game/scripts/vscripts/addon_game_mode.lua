@@ -4,7 +4,12 @@ require('internal/util')
 require('gamemode')
 
 function Precache( context )
-
+	PrecacheResource("particle", "particles/units/heroes/hero_necrolyte/necrolyte_scythe_start.vpcf", context)
+	PrecacheResource("particle", "particles/units/heroes/hero_necrolyte/necrolyte_scythe.vpcf", context)
+	PrecacheResource("particle", "particles/units/heroes/hero_phantom_assassin/phantom_assassin_crit_impact.vpcf", context)
+	PrecacheResource("soundfile", "soundevents/game_sounds_heroes/game_sounds_necrolyte.vsndevts", context)
+	PrecacheResource("soundfile", "soundevents/game_sounds_heroes/game_sounds_phantom_assassin.vsndevts", context)
+	PrecacheResource("soundfile", "soundevents/game_sounds_custom.vsndevts", context)
 end
 
 -- Create the game mode when we activate

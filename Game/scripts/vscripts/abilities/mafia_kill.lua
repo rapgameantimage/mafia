@@ -4,11 +4,19 @@ mafia_kill.action_types = {[ACTION_TYPE_KILL] = true}
 
 function mafia_kill:CastFilterResultTarget(target)
 	if not IsServer() then return end
-	return GameMode:GenericAbilityCastFilter(self)
+	if GameMode:GetPlayerAlignment(target:GetPlayerOwner()) == GameMode:GetPlayerAlignment(self:GetCaster():GetPlayerOwner()) then
+		return UF_FAIL_CUSTOM
+	else
+		return GameMode:GenericAbilityCastFilter(self, target)
+	end
 end
 
 function mafia_kill:GetCustomCastErrorTarget(target)
-	return GameMode:GenericAbilityCastError(self)
+	if target == self:GetCaster() then
+		return "#dota_hud_error_cant_cast_on_ally"
+	else
+		return GameMode:GenericAbilityCastError(self)
+	end
 end
 
 function mafia_kill:OnSpellStart()
@@ -21,12 +29,11 @@ function mafia_kill:OnSpellStart()
 end
 
 function mafia_kill:Resolve()
-	if not self.target:GetAssignedHero():HasModifier("protected") then
+	if not self.target:GetAssignedHero():HasModifier("modifier_protected") then
 		return {
 			type = RESOLUTION_TYPE_EVENT,
 			followthrough = function()
-				CustomGameEventManager:Send_ServerToAllClients("nightkill", {player = self.target})
-				self.target:GetAssignedHero():ForceKill(false)
+				GameMode:Nightkill(self.target)
 				self.target = nil
 			end
 		}

@@ -13,42 +13,54 @@
     "AbilityUnitTargetType"      "DOTA_UNIT_TARGET_HERO"
     "MaxLevel"  "1"
     "UsableDuringDay" "1"
+    "CastFilterRejectCaster"  "1"
+  }
+  "unvote"
+  {
+    "BaseClass" "ability_lua"
+    "ScriptFile"  "abilities/unvote"
+    "AbilityBehavior" "DOTA_ABILITY_BEHAVIOR_NO_TARGET"
+    "MaxLevel"  "1"
+    "UsableDuringDay" "1"
   }
 
   "investigate"
   {
     "BaseClass" "ability_lua"
     "ScriptFile"  "abilities/investigate"
-    "AbilityBehavior"        "DOTA_ABILITY_BEHAVIOR_UNIT_TARGET"
+    "AbilityBehavior"        "DOTA_ABILITY_BEHAVIOR_UNIT_TARGET | DOTA_ABILITY_BEHAVIOR_IMMEDIATE | DOTA_ABILITY_BEHAVIOR_UNRESTRICTED"
     "IsCastableWhileHidden" "1"
     "AbilityUnitTargetTeam"      "DOTA_UNIT_TARGET_TEAM_FRIENDLY"
     "AbilityUnitTargetType"      "DOTA_UNIT_TARGET_HERO"
     "MaxLevel"  "1"
     "UsableDuringNight" "1"
+    "CastFilterRejectCaster"  "1"
   }
 
   "protect"
   {
     "BaseClass" "ability_lua"
     "ScriptFile"  "abilities/protect"
-    "AbilityBehavior"        "DOTA_ABILITY_BEHAVIOR_UNIT_TARGET"
+    "AbilityBehavior"        "DOTA_ABILITY_BEHAVIOR_UNIT_TARGET | DOTA_ABILITY_BEHAVIOR_IMMEDIATE | DOTA_ABILITY_BEHAVIOR_UNRESTRICTED"
     "IsCastableWhileHidden" "1"
     "AbilityUnitTargetTeam"      "DOTA_UNIT_TARGET_TEAM_FRIENDLY"
     "AbilityUnitTargetType"      "DOTA_UNIT_TARGET_HERO"
     "MaxLevel"  "1"
     "UsableDuringNight" "1"
+    "CastFilterRejectCaster"  "1"
   }
 
   "mafia_kill"
   {
     "BaseClass" "ability_lua"
     "ScriptFile"  "abilities/mafia_kill"
-    "AbilityBehavior"        "DOTA_ABILITY_BEHAVIOR_UNIT_TARGET"
+    "AbilityBehavior"        "DOTA_ABILITY_BEHAVIOR_UNIT_TARGET | DOTA_ABILITY_BEHAVIOR_IMMEDIATE | DOTA_ABILITY_BEHAVIOR_UNRESTRICTED"
     "IsCastableWhileHidden" "1"
     "AbilityUnitTargetTeam"      "DOTA_UNIT_TARGET_TEAM_FRIENDLY"
     "AbilityUnitTargetType"      "DOTA_UNIT_TARGET_HERO"
     "MaxLevel"  "1"
     "UsableDuringNight" "1"
+    "CastFilterRejectCaster"  "1"
   }
 
   "mafia_chat"
@@ -58,6 +70,7 @@
     "AbilityBehavior"        "DOTA_ABILITY_BEHAVIOR_PASSIVE"
     "IsCastableWhileHidden" "1"
     "MaxLevel"  "1"
+    "CastFilterRejectCaster"  "1"
   }
 }
 

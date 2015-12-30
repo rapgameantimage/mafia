@@ -5,16 +5,52 @@
 	"Neutrals"        								"Neutral Team"
 	"NoTeam"          								"No Team"
 
-	"DOTA_GoodGuys"   								"Teal Tiger"
-	"DOTA_BadGuys"    								"Yellow Monkey"
-	"DOTA_Custom1"    								"Pink Dragon"
-	"DOTA_Custom2"    								"Orange Dog"
-	"DOTA_Custom3"    								"Blue Rooster"
-	"DOTA_Custom4"    								"Green Ram"
-	"DOTA_Custom5"    								"Brown Rat"
-	"DOTA_Custom6"    								"Cyan Boar"
-	"DOTA_Custom7"    								"Olive Snake"
-	"DOTA_Custom8"    								"Purple Horse"
-	
-	"addonname"										"Barebones"
+	"DOTA_GoodGuys"   								"Players"
+	"addonname"										"Mafia"
+
+	"alignment_0_victory"			"Town wins!"
+	"alignment_1_victory"			"Mafia wins!"
+	"alignment_2_victory"			"Werewolves win!"
+	"alignment_3_victorY"			"Serial Killer wins!"
+
+	"night"		"Night"
+	"day"		"Day"
+	"votes_to_lynch"	"Votes to lynch"
+	"vote_count"	"Vote Count"
+	"vote"		"Vote"
+	"votes"		"Votes"
+
+	"lynch_header" "is about to be lynched!"
+	"rip"	"R.I.P."
+	"lynch_mob"	"Lynch mob:"
+	"your_allies_are"	"Your allies are"
+	"is_your_ally"		"is also on your team"
+	"was_a"		"was a"
+	"was_an"	"was an"
+	"a"	"a"
+	"was_nightkilled"	"was killed in the night"
+	"close_button"	"close [x]"
+	"result_header"	 "In the night..."
+
+	"you_targeted"	"You targeted:"
+	"result"		"Result:"
+	"guilty"		"Guilty"
+	"innocent"		"Innocent"
+
+	"win_condition_0"	"You win when all threats to the town are eliminated."
+	"win_condition_1"	"You win when the mafia comprise 50% or more of the town."
+	"win_condition_2"	"You win when the werewolves comprise 50% or more of the town."
+	"win_condition_3"	"You win when everyone else is dead."
+
+	"townie"	"Townsperson"
+	"townie_description"	"You are an innocent townsperson with no special powers other than your vote. Use it wisely to find the mafia!"
+
+	"doctor"	"Doctor"
+	"doctor_description"	"Once per night, you can choose another player to protect from being killed. That player will not be informed, and you will not know whether your protection was effective."
+
+	"cop"		"Cop"
+	"cop_description"		"Once per night, you can choose another player to investigate. You will be informed whether they are part of the town or a hostile faction."
+
+	"goon"		"Mafia Goon"
+	"goon_description"		"You are a member of the mafia. Each night, you or one of your allies can choose a target to kill. If more than one of you picks a target, only the last target will be killed."
 }

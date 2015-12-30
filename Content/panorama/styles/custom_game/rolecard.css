@@ -1,0 +1,68 @@
+.rolecard {
+	width: 850px;
+	height: 450px;
+	background-color: gradient( linear, 0% 0%, 0% 100%, from( #131617fc ), to( #1C1C1C ) );
+	horizontal-align: center;
+	vertical-align: center;
+	border-radius: 20px;
+	box-shadow: fill #111111 2px 2px 3px 3px;
+	padding: 20px;
+	flow-children: down;
+	transition: position 2.0s ease-in-out 0.0s;
+}
+.rolecard.hide {
+	position: 950px 655px 0px;
+}
+.rolecard-header-text {
+	font-size: 44px;
+	text-transform: uppercase;
+	margin: 0 10px;
+	transition: color 0.2s ease-in-out 0.0s;
+}
+.rolecard.hide .rolecard-header-text:hover {
+	color: white;
+}
+.rolecard-header {
+	width: 100%;
+	border-bottom: 1px solid #ccc;
+	padding-bottom: 10px;
+}
+.rolecard-close-button {
+	horizontal-align: right;
+	font-size: 32px;
+	transition: color 0.2s ease-in-out 0.0s;
+}
+.rolecard-close-button:hover {
+	color: white;
+}
+.rolecard-body {
+	padding: 15px;
+	flow-children: down;
+}
+.rolecard-body Label {
+	margin: 6px 0px;
+}
+.rolecard-rolename {
+	font-size: 52px;
+	font-weight: bold;
+	margin-top: 0;
+}
+.rolecard-description {
+	font-size: 30px;
+}
+.rolecard-allies {
+	font-size: 30px;
+}
+.rolecard-win-condition {
+	font-size: 30px;
+	margin-bottom: 0;
+	font-weight: bold;
+}
+.alignment-0 .rolecard-rolename,
+.alignment-0 .rolecard-win-condition {
+	color: #009C12;
+}
+.alignment-1 .rolecard-rolename,
+.alignment-1 .rolecard-win-condition {
+	color: #B30000;
+}

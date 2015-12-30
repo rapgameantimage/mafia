@@ -4,11 +4,11 @@ protect.action_types = {[ACTION_TYPE_PROTECT] = true}
 
 function protect:CastFilterResultTarget(target)
 	if not IsServer() then return end
-	return GameMode:GenericAbilityCastFilter(self)
+	return GameMode:GenericAbilityCastFilter(self, target)
 end
 
 function protect:GetCustomCastErrorTarget(target)
-	return GameMode:GenericAbilityCastError(self)
+	return GameMode:GenericAbilityCastError(self, target)
 end
 
 function protect:OnSpellStart()

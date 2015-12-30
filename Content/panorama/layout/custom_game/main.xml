@@ -1,0 +1,47 @@
+<root>
+	<styles>
+		<include src="file://{resources}/styles/custom_game/main.css" />
+		<include src="file://{resources}/styles/dotastyles.css" />
+	</styles>
+	<scripts>
+		<include src="file://{resources}/scripts/custom_game/main.js" />
+    <include src="file://{resources}/scripts/custom_game/results.js" />
+	</scripts>
+  <Panel class="main-container" hittest="false">
+  	<Panel id="clock-container">
+  		<Panel id="clock-fill" class="day" />
+  		<Label id="clock-text" />
+  	</Panel>
+    <Panel id="phase" hittest="false">
+    	<Label id="phase-label" hittest="false" />
+    	<Label id="lynchcount-label" hittest="false" />
+    </Panel>
+    <Panel id="lynch-alert" class="hide">
+    	<Panel id="lynch-alert-top">
+	    	<Panel id="lynch-header-container">
+	    		<Label id="lynch-header" html="true" />
+	    	</Panel>
+	    	<Panel id="lynch-grave">
+	    		<DOTAHeroImage heroimagestyle="portrait" id="lynch-image" />
+	    		<Label text="#rip" />
+	    	</Panel>
+	    </Panel>
+	    <Panel id="lynch-alert-bottom">
+	    	<Label text="#lynch_mob" id="lynch-mob-header" />
+	    	<Panel id="lynch-mob" />
+	    </Panel>
+    </Panel>
+    <Panel id="kill-alert" hittest="false">
+      <Label id="kill-caption" hittest="false" html="true" />
+    </Panel>
+    <Panel id="votecount">
+    	<Label id="votecount-header" text="#vote_count" />
+    	<Label id="votes-to-lynch" />
+    	<Panel id="votecount-body">
+    		<Panel id="votecount-votecount">
+    		</Panel>
+    	</Panel>
+    </Panel>
+    <Panel id="rolecard-container" hittest="false" />
+  </Panel>
+</root>
