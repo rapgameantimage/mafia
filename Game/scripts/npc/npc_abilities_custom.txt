@@ -8,17 +8,22 @@
   {
     "BaseClass" "ability_lua"
     "ScriptFile"  "abilities/vote"
+    "AbilityTextureName"    "naga_siren_song_of_the_siren"
+    "AbilityUnitTargetFlags"  "DOTA_UNIT_TARGET_FLAG_INVULNERABLE"
     "AbilityBehavior"        "DOTA_ABILITY_BEHAVIOR_UNIT_TARGET"
     "AbilityUnitTargetTeam"      "DOTA_UNIT_TARGET_TEAM_FRIENDLY"
     "AbilityUnitTargetType"      "DOTA_UNIT_TARGET_HERO"
+    "AbilityCastPoint"  "0.3"
     "MaxLevel"  "1"
     "UsableDuringDay" "1"
-    "CastFilterRejectCaster"  "1"
+    "AbilityCooldown" "2"
   }
+
   "unvote"
   {
     "BaseClass" "ability_lua"
     "ScriptFile"  "abilities/unvote"
+    "AbilityTextureName"    "naga_siren_song_of_the_siren_cancel"
     "AbilityBehavior" "DOTA_ABILITY_BEHAVIOR_NO_TARGET"
     "MaxLevel"  "1"
     "UsableDuringDay" "1"
@@ -28,49 +33,225 @@
   {
     "BaseClass" "ability_lua"
     "ScriptFile"  "abilities/investigate"
+    "AbilityTextureName"    "oracle_fortunes_end"
     "AbilityBehavior"        "DOTA_ABILITY_BEHAVIOR_UNIT_TARGET | DOTA_ABILITY_BEHAVIOR_IMMEDIATE | DOTA_ABILITY_BEHAVIOR_UNRESTRICTED"
-    "IsCastableWhileHidden" "1"
     "AbilityUnitTargetTeam"      "DOTA_UNIT_TARGET_TEAM_FRIENDLY"
     "AbilityUnitTargetType"      "DOTA_UNIT_TARGET_HERO"
     "MaxLevel"  "1"
     "UsableDuringNight" "1"
-    "CastFilterRejectCaster"  "1"
+  }
+
+  "one_shot_investigate"
+  {
+    "BaseClass" "ability_lua"
+    "ScriptFile"  "abilities/investigate"
+    "AbilityTextureName"    "oracle_fortunes_end"
+    "AbilityBehavior"        "DOTA_ABILITY_BEHAVIOR_UNIT_TARGET | DOTA_ABILITY_BEHAVIOR_IMMEDIATE | DOTA_ABILITY_BEHAVIOR_UNRESTRICTED"
+    "AbilityUnitTargetTeam"      "DOTA_UNIT_TARGET_TEAM_FRIENDLY"
+    "AbilityUnitTargetType"      "DOTA_UNIT_TARGET_HERO"
+    "MaxLevel"  "1"
+    "UsableDuringNight" "1"
+    "HasLimitedUses"  "1"
+  }
+
+  "two_shot_investigate"
+  {
+    "BaseClass" "ability_lua"
+    "ScriptFile"  "abilities/investigate"
+    "AbilityTextureName"    "oracle_fortunes_end"
+    "AbilityBehavior"        "DOTA_ABILITY_BEHAVIOR_UNIT_TARGET | DOTA_ABILITY_BEHAVIOR_IMMEDIATE | DOTA_ABILITY_BEHAVIOR_UNRESTRICTED"
+    "AbilityUnitTargetTeam"      "DOTA_UNIT_TARGET_TEAM_FRIENDLY"
+    "AbilityUnitTargetType"      "DOTA_UNIT_TARGET_HERO"
+    "MaxLevel"  "1"
+    "UsableDuringNight" "1"
+    "HasLimitedUses"  "2"
   }
 
   "protect"
   {
     "BaseClass" "ability_lua"
     "ScriptFile"  "abilities/protect"
+    "AbilityTextureName"    "dazzle_shallow_grave"
     "AbilityBehavior"        "DOTA_ABILITY_BEHAVIOR_UNIT_TARGET | DOTA_ABILITY_BEHAVIOR_IMMEDIATE | DOTA_ABILITY_BEHAVIOR_UNRESTRICTED"
-    "IsCastableWhileHidden" "1"
     "AbilityUnitTargetTeam"      "DOTA_UNIT_TARGET_TEAM_FRIENDLY"
     "AbilityUnitTargetType"      "DOTA_UNIT_TARGET_HERO"
     "MaxLevel"  "1"
     "UsableDuringNight" "1"
-    "CastFilterRejectCaster"  "1"
+  }
+
+  "protect_one_shot"
+  {
+    "BaseClass" "ability_lua"
+    "ScriptFile"  "abilities/protect"
+    "AbilityTextureName"    "dazzle_shallow_grave"
+    "AbilityBehavior"        "DOTA_ABILITY_BEHAVIOR_UNIT_TARGET | DOTA_ABILITY_BEHAVIOR_IMMEDIATE | DOTA_ABILITY_BEHAVIOR_UNRESTRICTED"
+    "AbilityUnitTargetTeam"      "DOTA_UNIT_TARGET_TEAM_FRIENDLY"
+    "AbilityUnitTargetType"      "DOTA_UNIT_TARGET_HERO"
+    "MaxLevel"  "1"
+    "UsableDuringNight" "1"
+    "HasLimitedUses"  "1"
+  }
+
+  "protect_two_shot"
+  {
+    "BaseClass" "ability_lua"
+    "ScriptFile"  "abilities/protect"
+    "AbilityTextureName"    "dazzle_shallow_grave"
+    "AbilityBehavior"        "DOTA_ABILITY_BEHAVIOR_UNIT_TARGET | DOTA_ABILITY_BEHAVIOR_IMMEDIATE | DOTA_ABILITY_BEHAVIOR_UNRESTRICTED"
+    "AbilityUnitTargetTeam"      "DOTA_UNIT_TARGET_TEAM_FRIENDLY"
+    "AbilityUnitTargetType"      "DOTA_UNIT_TARGET_HERO"
+    "MaxLevel"  "1"
+    "UsableDuringNight" "1"
+    "HasLimitedUses"  "2"
   }
 
   "mafia_kill"
   {
     "BaseClass" "ability_lua"
     "ScriptFile"  "abilities/mafia_kill"
+    "AbilityTextureName"    "bounty_hunter_jinada"
     "AbilityBehavior"        "DOTA_ABILITY_BEHAVIOR_UNIT_TARGET | DOTA_ABILITY_BEHAVIOR_IMMEDIATE | DOTA_ABILITY_BEHAVIOR_UNRESTRICTED"
-    "IsCastableWhileHidden" "1"
     "AbilityUnitTargetTeam"      "DOTA_UNIT_TARGET_TEAM_FRIENDLY"
     "AbilityUnitTargetType"      "DOTA_UNIT_TARGET_HERO"
     "MaxLevel"  "1"
     "UsableDuringNight" "1"
-    "CastFilterRejectCaster"  "1"
+    "IsFactionalAbility"  "1"
   }
 
-  "mafia_chat"
+  "nonfactional_kill"
   {
     "BaseClass" "ability_lua"
-    "ScriptFile"  "abilities/mafia_chat"
-    "AbilityBehavior"        "DOTA_ABILITY_BEHAVIOR_PASSIVE"
-    "IsCastableWhileHidden" "1"
+    "ScriptFile"  "abilities/nonfactional_kill"
+    "AbilityTextureName"    "queenofpain_shadow_strike"
+    "AbilityBehavior"        "DOTA_ABILITY_BEHAVIOR_UNIT_TARGET | DOTA_ABILITY_BEHAVIOR_IMMEDIATE | DOTA_ABILITY_BEHAVIOR_UNRESTRICTED"
+    "AbilityUnitTargetTeam"      "DOTA_UNIT_TARGET_TEAM_FRIENDLY"
+    "AbilityUnitTargetType"      "DOTA_UNIT_TARGET_HERO"
     "MaxLevel"  "1"
-    "CastFilterRejectCaster"  "1"
+    "UsableDuringNight" "1"
+  }
+
+  "nonfactional_kill_one_shot"
+  {
+    "BaseClass" "ability_lua"
+    "ScriptFile"  "abilities/nonfactional_kill"
+    "AbilityTextureName"    "queenofpain_shadow_strike"
+    "AbilityBehavior"        "DOTA_ABILITY_BEHAVIOR_UNIT_TARGET | DOTA_ABILITY_BEHAVIOR_IMMEDIATE | DOTA_ABILITY_BEHAVIOR_UNRESTRICTED"
+    "AbilityUnitTargetTeam"      "DOTA_UNIT_TARGET_TEAM_FRIENDLY"
+    "AbilityUnitTargetType"      "DOTA_UNIT_TARGET_HERO"
+    "MaxLevel"  "1"
+    "UsableDuringNight" "1"
+    "HasLimitedUses"  "1"
+  }
+
+  "nonfactional_kill_two_shot"
+  {
+    "BaseClass" "ability_lua"
+    "ScriptFile"  "abilities/nonfactional_kill"
+    "AbilityTextureName"    "queenofpain_shadow_strike"
+    "AbilityBehavior"        "DOTA_ABILITY_BEHAVIOR_UNIT_TARGET | DOTA_ABILITY_BEHAVIOR_IMMEDIATE | DOTA_ABILITY_BEHAVIOR_UNRESTRICTED"
+    "AbilityUnitTargetTeam"      "DOTA_UNIT_TARGET_TEAM_FRIENDLY"
+    "AbilityUnitTargetType"      "DOTA_UNIT_TARGET_HERO"
+    "MaxLevel"  "1"
+    "UsableDuringNight" "1"
+    "HasLimitedUses"  "2"
+  }
+
+  "block"
+  {
+    "BaseClass" "ability_lua"
+    "ScriptFile"  "abilities/block"
+    "AbilityTextureName"  "silencer_last_word"
+    "AbilityBehavior" "DOTA_ABILITY_BEHAVIOR_UNIT_TARGET | DOTA_ABILITY_BEHAVIOR_IMMEDIATE | DOTA_ABILITY_BEHAVIOR_UNRESTRICTED"
+    "AbilityUnitTargetTeam"   "DOTA_UNIT_TARGET_TEAM_FRIENDLY"
+    "AbilityUnitTargetType"   "DOTA_UNIT_TARGET_HERO"
+    "MaxLevel"  "1"
+    "UsableDuringNight" "1"
+  }
+
+  "jail"
+  {
+    "BaseClass" "ability_lua"
+    "ScriptFile"  "abilities/jail"
+    "AbilityTextureName"  "obsidian_destroyer_astral_imprisonment"
+    "AbilityBehavior" "DOTA_ABILITY_BEHAVIOR_UNIT_TARGET | DOTA_ABILITY_BEHAVIOR_IMMEDIATE | DOTA_ABILITY_BEHAVIOR_UNRESTRICTED"
+    "AbilityUnitTargetTeam"   "DOTA_UNIT_TARGET_TEAM_FRIENDLY"
+    "AbilityUnitTargetType"   "DOTA_UNIT_TARGET_HERO"
+    "MaxLevel"  "1"
+    "UsableDuringNight" "1"
+  }
+
+  "track"
+  {
+    "BaseClass" "ability_lua"
+    "ScriptFile"  "abilities/track"
+    "AbilityTextureName"  "bounty_hunter_track"
+    "AbilityBehavior" "DOTA_ABILITY_BEHAVIOR_UNIT_TARGET | DOTA_ABILITY_BEHAVIOR_IMMEDIATE | DOTA_ABILITY_BEHAVIOR_UNRESTRICTED"
+    "AbilityUnitTargetTeam"   "DOTA_UNIT_TARGET_TEAM_FRIENDLY"
+    "AbilityUnitTargetType"   "DOTA_UNIT_TARGET_HERO"
+    "MaxLevel"  "1"
+    "UsableDuringNight" "1"
+  }
+
+  "appears_innocent"
+  {
+    "BaseClass" "ability_lua"
+    "ScriptFile"  "abilities/appears_innocent"
+    "AbilityTextureName"  "omniknight_guardian_angel"
+    "AbilityBehavior" "DOTA_ABILITY_BEHAVIOR_PASSIVE"
+    "MaxLevel"  "1"
+  }
+
+  "watch"
+  {
+    "BaseClass" "ability_lua"
+    "ScriptFile"  "abilities/watch"
+    "AbilityTextureName"  "invoker/magus_apex/invoker_wex"
+    "AbilityBehavior" "DOTA_ABILITY_BEHAVIOR_UNIT_TARGET | DOTA_ABILITY_BEHAVIOR_IMMEDIATE | DOTA_ABILITY_BEHAVIOR_UNRESTRICTED"
+    "AbilityUnitTargetTeam"   "DOTA_UNIT_TARGET_TEAM_FRIENDLY"
+    "AbilityUnitTargetType"   "DOTA_UNIT_TARGET_HERO"
+    "MaxLevel"  "1"
+    "UsableDuringNight" "1"
+  }
+
+  "bodyguard"
+  {
+    "BaseClass" "ability_lua"
+    "ScriptFile"  "abilities/bodyguard"
+    "AbilityTextureName"  "sven_warcry"
+    "AbilityBehavior" "DOTA_ABILITY_BEHAVIOR_UNIT_TARGET | DOTA_ABILITY_BEHAVIOR_IMMEDIATE | DOTA_ABILITY_BEHAVIOR_UNRESTRICTED"
+    "AbilityUnitTargetTeam"   "DOTA_UNIT_TARGET_TEAM_FRIENDLY"
+    "AbilityUnitTargetType"   "DOTA_UNIT_TARGET_HERO"
+    "MaxLevel"  "1"
+    "UsableDuringNight" "1"
+  }
+
+  "dayvig_one_shot"
+  {
+    "BaseClass" "ability_lua"
+    "ScriptFile"  "abilities/dayvig"
+    "AbilityTextureName"  "sniper_assassinate"
+    "AbilityBehavior" "DOTA_ABILITY_BEHAVIOR_UNIT_TARGET | DOTA_ABILITY_BEHAVIOR_IMMEDIATE | DOTA_ABILITY_BEHAVIOR_UNRESTRICTED"
+    "AbilityUnitTargetTeam"   "DOTA_UNIT_TARGET_TEAM_FRIENDLY"
+    "AbilityUnitTargetType"   "DOTA_UNIT_TARGET_HERO"
+    "MaxLevel"  "1"
+    "UsableDuringDay" "1"
+    "HasLimitedUses"  "1"
+  }
+
+  "ironskin"
+  {
+    "BaseClass" "ability_lua"
+    "ScriptFile"  "abilities/ironskin"
+    "AbilityTextureName"  "shredder_reactive_armor"
+    "AbilityBehavior" "DOTA_ABILITY_BEHAVIOR_PASSIVE"
+    "MaxLevel"  "1"
+  }
+
+  "mason"
+  {
+    "BaseClass" "ability_datadriven"
+    "AbilityTextureName"  "meepo_divided_we_stand"
+    "AbilityBehavior" "DOTA_ABILITY_BEHAVIOR_PASSIVE"
+    "MaxLevel"  "1"
   }
 }
-

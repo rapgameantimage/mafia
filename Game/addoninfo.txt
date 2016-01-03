@@ -1,8 +1,8 @@
 "AddonInfo"
 {
-	"TeamCount"		"10"
-	"template_map"
+	"TeamCount"		"1"
+	"mafia"
 	{
-		"MaxPlayers"		"10"
+		"MaxPlayers"		"13"
 	}
 }

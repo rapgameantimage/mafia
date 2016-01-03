@@ -6,6 +6,7 @@
 	<scripts>
 		<include src="file://{resources}/scripts/custom_game/main.js" />
     <include src="file://{resources}/scripts/custom_game/results.js" />
+    <include src="file://{resources}/scripts/custom_game/votelines.js" />
 	</scripts>
   <Panel class="main-container" hittest="false">
   	<Panel id="clock-container">
@@ -39,7 +40,7 @@
     	<Label id="votes-to-lynch" />
     	<Panel id="votecount-body">
     		<Panel id="votecount-votecount">
-    		</Panel>
+    		</Panel> 
     	</Panel>
     </Panel>
     <Panel id="rolecard-container" hittest="false" />

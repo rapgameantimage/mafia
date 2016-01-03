@@ -8,7 +8,7 @@
 	box-shadow: fill #111111 2px 2px 3px 3px;
 	padding: 20px;
 	flow-children: down;
-	transition: position 2.0s ease-in-out 0.0s;
+	transition: position 0.8s ease-in-out 0.0s;
 }
 .rolecard.hide {
 	position: 950px 655px 0px;

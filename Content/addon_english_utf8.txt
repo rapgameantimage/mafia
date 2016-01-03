@@ -1,0 +1,50 @@
+﻿"lang"
+{
+	"Language"		"English"
+	"Tokens"
+	{		
+		"game_mode_15"				"MAFIA"
+		"addon_game_name"			"MAFIA"
+
+		"dota_hud_error_silent"						" "
+		"dota_hud_error_not_usable_during_night"	"Not Usable During Night"
+		"dota_hud_error_not_usable_during_day"		"Not Usable During Day"
+		"dota_hud_error_not_usable_during_twilight"	"Not Usable During Twilight"
+		"dota_hud_error_not_usable_during_dawn"		"Not Usable During Dawn"
+
+		"no_lynch_target"			"Symbol of Peace"
+		
+		"DOTA_Tooltip_ability_vote"                                                       "Vote"
+		"DOTA_Tooltip_ability_vote_Description"                                           "Vote to lynch a player. If a player receives a majority of votes, they will be lynched. You can only vote for one player at a time. You can vote to not lynch anyone by voting for the Symbol of Peace in the middle of the map."
+
+		"DOTA_Tooltip_ability_unvote"                                                     "Unvote"
+		"DOTA_Tooltip_ability_unvote_Description"                                         "Remove your vote."
+
+		"DOTA_Tooltip_ability_investigate"                                                "Investigate"
+		"DOTA_Tooltip_ability_investigate_Description"                                    "Target a player at night to learn whether they are mafia."
+
+		"DOTA_Tooltip_ability_protect"                                                    "Protect"
+		"DOTA_Tooltip_ability_protect_Description"                                        "Target a player at night to protect them from being killed at night."
+
+		"DOTA_Tooltip_ability_mafia_kill"                                                 "Mafia Nightkill"
+		"DOTA_Tooltip_ability_mafia_kill_Description"                                     "Target a player at night to attempt to kill them. This is a factional ability; only one member of the mafia can use it per night."
+
+		"DOTA_Tooltip_ability_nonfactional_kill"                                          "Kill"
+		"DOTA_Tooltip_ability_nonfactional_kill_Description"                              "Target a player at night to attempt to kill them."
+
+		"DOTA_Tooltip_ability_block"                                                      "Block"
+		"DOTA_Tooltip_ability_block_Description"                                          "Target a player at night to roleblock them, preventing them from using night actions. This ability can't be roleblocked."
+
+		"DOTA_Tooltip_ability_jail"                                                       "Jail"
+		"DOTA_Tooltip_ability_jail_Description"                                           "Target a player at night to jail them, preventing them from using night actions but also blocking any kills performed on them. This ability can't be roleblocked."
+
+		"DOTA_Tooltip_ability_track"                                                      "Track"
+		"DOTA_Tooltip_ability_track_Description"                                          "Target a player at night to track them and learn who they targeted that night."
+
+		"DOTA_Tooltip_ability_appears_innocent"                                           "Godfather"
+		"DOTA_Tooltip_ability_appears_innocent_Description"                               "You will appear as 'Not Mafia' to investigations checking whether you are a member of the mafia, and 'Innocent' to investigations checking your alignment."
+
+		"DOTA_Tooltip_ability_watch"                                                      "Watch"
+		"DOTA_Tooltip_ability_watch_Description"                                          "Target a player at night to watch them and learn who else targeted them that night."
+	}
+}

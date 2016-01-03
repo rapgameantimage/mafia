@@ -19,6 +19,7 @@ function OnStageChange(ev) {
 			$("#phase-label").SetHasClass("hide", true)
 			$("#lynchcount-label").SetHasClass("hide", true)
 		})
+		UnmuteLivingPlayers()
 	} else if (ev.stage == STAGE_NIGHT) {
 		$("#phase-label").text = $.Localize("#night") + " " + ev.cycle
 		$("#clock-text").SetHasClass("hide", true)
@@ -32,6 +33,7 @@ function OnStageChange(ev) {
 			$("#clock-text").SetHasClass("hide", false)
 			$("#phase-label").SetHasClass("hide", true)
 		})
+		MuteAllPlayers()
 	} else if (ev.stage == STAGE_DAWN) {
 		$("#clock-fill").style.width = "0%;"
 		$("#clock-text").SetHasClass("hide", true)
@@ -72,9 +74,11 @@ function OnUpdateVotes(ev) {
 		panel.SetHasClass("lynch-minus-one", mostvotes >= ev.votes_to_lynch - 1)
 		var top = $.CreatePanel("Panel", panel, "votecount-player" + player + "-top")
 		top.SetHasClass("votecount-player-top", true)
-		var img = $.CreatePanel("DOTAHeroImage", top, "votecount-player" + player + "-heroimage")
-		img.heroname = Entities.GetClassname(Players.GetPlayerHeroEntityIndex(parseInt(player)))
-		img.heroimagestyle = "icon"
+		if (player != "no lynch") {
+			var img = $.CreatePanel("DOTAHeroImage", top, "votecount-player" + player + "-heroimage")
+			img.heroname = Entities.GetClassname(Players.GetPlayerHeroEntityIndex(parseInt(player)))
+			img.heroimagestyle = "icon"
+		}
 		var lbl = $.CreatePanel("Label", top, "votecount-player" + player + "-label")
 
 		var pluralized
@@ -83,7 +87,7 @@ function OnUpdateVotes(ev) {
 		} else {
 			pluralized = $.Localize("#votes").toLowerCase()
 		}
-		lbl.text = votecount[player].length + " " + pluralized + " for " + Players.GetPlayerName(parseInt(player))
+		lbl.text = votecount[player].length + " " + pluralized + " for " + (player != "no lynch" ? Players.GetPlayerName(parseInt(player)) : $.Localize("#no_lynch"))
 		
 		var voterspanel = $.CreatePanel("Panel", panel, "votecount-player" + player + "-voters")
 		voterspanel.SetHasClass("votecount-player-voters", true)
@@ -133,11 +137,16 @@ function OnPlayerWillBeLynched(ev) {
 
 function OnBeginLynch(ev) {
 	$("#lynch-alert").SetHasClass("fade", true)
-	/*
-	$.Schedule(0.5, function() {
-		$("#lynch-alert").SetHasClass("hide", true)
-	})
-	*/
+}
+
+function OnNoLynch(ev) {
+	$("#phase-label").text = $.Localize("#no_lynch_reached")
+	$("#phase-label").SetHasClass("hide", false)
+}
+
+function OnDeadlineReached(ev) {
+	$("#phase-label").text = $.Localize("#deadline_reached")
+	$("#phase-label").SetHasClass("hide", false)
 }
 
 function FlipPlayer(ev) {
@@ -180,8 +189,37 @@ function OnNightkill(ev) {
 	$("#kill-caption").text = Players.GetPlayerName(ev.player) + ", " + $.Localize("#a") + " <span class='strong alignment-" + ev.alignment + "'>" + $.Localize(ev.role) + "</span>, " + $.Localize("#was_nightkilled") + "."
 }
 
-function OnPlayerChat(ev) {
-	$.Msg(ev)
+function OnDaykill(ev) {
+	$("#kill-alert").SetHasClass("hide", false)
+	$("#kill-caption").text = Players.GetPlayerName(ev.player) + ", " + $.Localize("#a") + " <span class='strong alignment-" + ev.alignment + "'>" + $.Localize(ev.role) + "</span>, " + $.Localize("#was_daykilled_by") + " " + Players.GetPlayerName(ev.killer) + "!"
+	$.Schedule(5, function() {
+		$("#kill-alert").SetHasClass("hide", true)
+	})
+}
+
+function MuteDeadPlayers() {
+	var players = Game.GetPlayerIDsOnTeam(DOTATeam_t.DOTA_TEAM_GOODGUYS)
+	for (var i = 0; i < players.length; i++) {
+		if (!Entities.IsAlive(Players.GetPlayerHeroEntityIndex(players[i]))) {
+			Game.SetPlayerMuted(players[i], true)
+		}
+	}
+}
+
+function MuteAllPlayers() {
+	var players = Game.GetPlayerIDsOnTeam(DOTATeam_t.DOTA_TEAM_GOODGUYS)
+	for (var i = 0; i < players.length; i++) {
+		Game.SetPlayerMuted(players[i], true)
+	}
+}
+
+function UnmuteLivingPlayers() {
+	var players = Game.GetPlayerIDsOnTeam(DOTATeam_t.DOTA_TEAM_GOODGUYS)
+	for (var i = 0; i < players.length; i++) {
+		if (Entities.IsAlive(Players.GetPlayerHeroEntityIndex(players[i]))) {
+			Game.SetPlayerMuted(players[i], false)
+		}
+	}
 }
 
 (function() {
@@ -193,7 +231,13 @@ function OnPlayerChat(ev) {
 	GameEvents.Subscribe("flip_player", FlipPlayer)
 	GameEvents.Subscribe("show_rolecard", ShowRolecard)
 	GameEvents.Subscribe("nightkill", OnNightkill)
-	GameEvents.Subscribe("player_chat", OnPlayerChat)
+	GameEvents.Subscribe("no_lynch", OnNoLynch)
+	GameEvents.Subscribe("deadline_reached", OnDeadlineReached)
+	GameEvents.Subscribe("daykill", OnDaykill)
+
+	CustomNetTables.SubscribeNetTableListener("graveyard", MuteDeadPlayers)
+	UnmuteLivingPlayers()
+	MuteDeadPlayers()
 
 	GameUI.SetRenderBottomInsetOverride(0)
 })()

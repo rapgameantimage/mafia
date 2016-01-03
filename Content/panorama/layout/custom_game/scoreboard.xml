@@ -1,0 +1,20 @@
+<root>
+	<styles>
+		<include src="file://{resources}/styles/dotastyles.css" />
+		<include src="file://{resources}/styles/custom_game/main.css" />
+		<include src="file://{resources}/styles/custom_game/scoreboard.css" />
+	</styles>
+	<scripts>
+		<include src="file://{resources}/scripts/custom_game/scoreboard.js" />
+	</scripts>
+	<Panel class="scoreboard" hittest="false">
+		<Panel id="living-players" class="scoreboard-section">
+			<Label id="living-players-header" text="#living_players_header" class="scoreboard-section-header" />
+			<Panel id="living-players-body" class="scoreboard-section-body" />
+		</Panel>
+		<Panel id="graveyard" class="scoreboard-section">
+		  <Label id="graveyard-header" text="#graveyard_header" class="scoreboard-section-header" />
+		  <Panel id="graveyard-body" class="scoreboard-section-body" />
+		</Panel>
+	</Panel>
+</root>

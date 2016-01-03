@@ -20,18 +20,24 @@ require("constants")
 require("roles")
 require("modifiers")
 require("ability_helpers")
+require("setup_generator")
 
 if roles == nil then
   roles = {}
 end
 votes = {}
-current_stage = STAGE_DAY
-current_cycle = 1
+if not current_stage then current_stage = STAGE_DAY end
+if not current_cycle then current_cycle = 1 end
 
 pre_resolution_stack = {}
 night_actions = {}
+resolved_targets = {}
+starting_locations = {}
+factional_target_particles = {}
 
 ability_data = LoadKeyValues("scripts/npc/npc_abilities_custom.txt")
+
+TEST_ROLE = "ironskinned_townie"
 
 function GameMode:PostLoadPrecache()
 end
@@ -40,21 +46,38 @@ function GameMode:OnFirstPlayerLoaded()
 end
 
 function GameMode:OnAllPlayersLoaded()
-  local setup = { "goon", "goon", "townie", "townie", "townie", "cop", "doctor" }
+  local setup = GenerateSetup(PlayerResource:GetPlayerCountForTeam(DOTA_TEAM_GOODGUYS))
   -- Distribute roles randomly
+  local player_count = 0
   for _,player in pairs(GetPlayersOnTeam(DOTA_TEAM_GOODGUYS)) do
     -- WHY DOESN'T LUA HAVE ARRAYS???
+    player_count = player_count + 1
     local role
     local rolenum
     repeat
       rolenum = RandomInt(1,#setup)
       role = setup[rolenum]
-    until role ~= "taken" or (#setup == 0)
+    until role ~= "taken"
     roles[player] = role
+    if player:GetPlayerID() == 0 and TEST_ROLE and Convars:GetBool("developer") then
+      roles[player] = TEST_ROLE
+    end
     setup[rolenum] = "taken"
     CustomGameEventManager:Send_ServerToPlayer(player, "distribute_role", {role = role, alignment = ROLE_DEFINITIONS[role].alignment})
   end
-  PrintTable(roles)
+
+  -- Determine start positions
+  local center = Vector(0,0,0)
+  local radius = 600
+  local start = RandomFloat(0, 2 * math.pi)   -- Randomize the orientation of the circle
+  for k = 0,player_count - 1 do
+    local x = center.x + radius * math.cos(start + 2 * k * math.pi / player_count)
+    local y = center.y + radius * math.sin(start + 2 * k * math.pi / player_count)
+    starting_locations[k] = Vector(x, y, 0)
+  end
+
+  local nolynch = CreateUnitByName("no_lynch_target", Vector(100, 0, 0), true, nil, nil, DOTA_TEAM_GOODGUYS)
+  nolynch:AddNewModifier(nil, nil, "modifier_no_lynch_target", {})
 end
 
 function GameMode:OnHeroInGame(hero)
@@ -74,15 +97,24 @@ function GameMode:OnHeroInGame(hero)
     -- Grant other abilities to this hero as appropriate
     for k,ability in pairs(ROLE_DEFINITIONS[roles[hero:GetPlayerOwner()]].abilities) do
       hero:AddAbility(ability):SetLevel(1)
+      if ability_data[ability].HasLimitedUses then
+        hero:FindAbilityByName(ability).uses_left = tonumber(ability_data[ability].HasLimitedUses)
+      end
     end
+    Timers:CreateTimer(0.03, function()
+      local origin = starting_locations[hero:GetPlayerOwnerID()]
+      hero:SetAbsOrigin(origin)
+      hero:SetForwardVector(origin:Normalized() * Vector(-1, -1, 0))
+    end)
   end
+
+  hero:SetAttackCapability(DOTA_UNIT_CAP_NO_ATTACK)
 end
 
 function GameMode:OnGameInProgress()
   for _,player in pairs(GetPlayersOnTeam(DOTA_TEAM_GOODGUYS)) do
-    if PlayerResource:GetSteamAccountID(player:GetPlayerID()) == 0 then
+    if PlayerResource:GetSteamAccountID(player:GetPlayerID()) == 0 then     -- Bots
       local heroname = PlayerResource:GetSelectedHeroName(player:GetPlayerID())
-      print("Recreating " .. heroname .. " for " .. player:GetPlayerID())
       local oldhero = player:GetAssignedHero()
       local replaced = PlayerResource:ReplaceHeroWith(player:GetPlayerID(), heroname, 0, 0)
       if not replaced then
@@ -105,12 +137,32 @@ function GameMode:InitGameMode()
   Convars:RegisterCommand( "eval", Dynamic_Wrap(GameMode, 'Eval'), "Eval", FCVAR_CHEAT )
   Convars:RegisterCommand( "update_abilities", Dynamic_Wrap(GameMode, 'UpdateAbilities'), "Update abilities", FCVAR_CHEAT )
   Convars:RegisterCommand( "alohamora", Dynamic_Wrap(GameMode, 'UnlockSelection'), "wizard shit", FCVAR_CHEAT )
+  Convars:RegisterCommand( "stage", Dynamic_Wrap(GameMode, 'ConsoleChangeStage'), "", FCVAR_CHEAT)
+  Convars:RegisterCommand( "role", Dynamic_Wrap(GameMode, 'ConsoleChangeRole'), "", FCVAR_CHEAT)
+  Convars:RegisterCommand( "gen", Dynamic_Wrap(GameMode, 'TestSetupGenerator'), "", FCVAR_CHEAT)
 
   CustomGameEventManager:RegisterListener("get_role", Dynamic_Wrap(GameMode, 'SendRoleToClient'))
 end
 
+function GameMode:TestSetupGenerator(players)
+  if not players then players = 13 end
+  PrintTable(GenerateSetup(tonumber(players)))
+end
+
+function GameMode:ConsoleChangeRole(role)
+  roles[PlayerResource:GetPlayer(0)] = role
+  GameMode:OnHeroInGame(PlayerResource:GetPlayer(0):GetAssignedHero())
+  CustomGameEventManager:Send_ServerToPlayer(player, "distribute_role", {role = role, alignment = ROLE_DEFINITIONS[role].alignment})
+end
+
+function GameMode:ConsoleChangeStage(stage)
+  GameMode:ChangeStage(tonumber(stage), current_cycle)
+end
+
 function GameMode:Test()
-  CustomGameEventManager:Send_ServerToAllClients("endgame_reveal", event)
+  p = ParticleManager:CreateParticle("particles/voteline.vpcf", PATTACH_ABSORIGIN_FOLLOW, PlayerResource:GetPlayer(0):GetAssignedHero())
+  ParticleManager:SetParticleControl(p, 0, Vector(500,0,0)) 
+  ParticleManager:SetParticleControl(p, 1, Vector(0,0,0)) 
 end
 
 function GameMode:Eval(string)
@@ -136,7 +188,11 @@ function GameMode:ChangeVote(player, target)
   votes[player] = target
   local votes_for_event = {}
   for player,vote in pairs(votes) do
-    votes_for_event[player:GetPlayerID()] = vote:GetPlayerID()
+    if vote == "no lynch" then
+      votes_for_event[player:GetPlayerID()] = "no lynch"
+    else
+      votes_for_event[player:GetPlayerID()] = vote:GetPlayerID()
+    end
   end
   CustomGameEventManager:Send_ServerToAllClients("update_votes", {votes = votes_for_event, votes_to_lynch = GameMode:GetVotesToLynch()})
 
@@ -150,15 +206,19 @@ function GameMode:ChangeVote(player, target)
       vote_counts[vote] = 1
     end
     if vote_counts[vote] >= votes_to_lynch then
-      CustomGameEventManager:Send_ServerToAllClients("player_will_be_lynched", {lynchee = vote:GetPlayerID(), votes = votes_for_event})
-      GameMode:ChangeStage(STAGE_TWILIGHT, current_cycle, {lynchee = vote})
+      if vote == "no lynch" then
+        CustomGameEventManager:Send_ServerToAllClients("no_lynch", {})
+        GameMode:ChangeStage(STAGE_TWILIGHT, current_cycle, {})
+      else
+        CustomGameEventManager:Send_ServerToAllClients("player_will_be_lynched", {lynchee = vote:GetPlayerID(), votes = votes_for_event})
+        GameMode:ChangeStage(STAGE_TWILIGHT, current_cycle, {lynchee = vote})
+      end
       break
     end
   end
 end
 
 function GameMode:ChangeStage(stage, cycle, options)
-  print("Changing stage to " .. stage)
   Timers:RemoveTimer("stage_tick_timer")
   last_stage_change = GameRules:GetGameTime()
   local stage_change_event = {stage = stage, cycle = cycle, options = options, votes_to_lynch = GameMode:GetVotesToLynch()}
@@ -201,7 +261,15 @@ function GameMode:EnterTwilight(lynchee)
 
             Timers:CreateTimer(1.5, function() 
               CustomGameEventManager:Send_ServerToAllClients("flip_player", GameMode:GetFlip(lynchee:GetPlayerID()))
+              CustomNetTables:SetTableValue("graveyard", tostring(lynchee:GetPlayerID()), {
+                role = roles[lynchee],
+                alignment = GameMode:GetPlayerAlignment(lynchee),
+                death_type = "lynched",
+                stage = STAGE_DAY,
+                cycle = current_cycle
+              })
             end)
+
             Timers:CreateTimer("primary_timer", {
               endTime = 8,
               callback = function()
@@ -216,7 +284,6 @@ function GameMode:EnterTwilight(lynchee)
       end
     })
   else
-    CustomGameEventManager:Send_ServerToAllClients("no_lynch", {})
     Timers:CreateTimer("primary_timer", {
       endTime = STAGE_LENGTH_TWILIGHT,
       callback = function()
@@ -230,25 +297,45 @@ function GameMode:EnterNight()
   GameRules:SetTimeOfDay(0)
   pre_resolution_stack = {}
   night_actions = {}
-  -- Wait for night actions.
+  
+  for k,hero in pairs(HeroList:GetAllHeroes()) do
+    if hero:IsAlive() then
+      hero:AddNewModifier(nil, nil, "modifier_sleeping", {})
+    end
+  end
 
   Timers:CreateTimer("stage_tick_timer", {
     endTime = 0.1,
     callback = function()
-      CustomGameEventManager:Send_ServerToAllClients("stage_tick", {elapsed = GameRules:GetGameTime() - last_stage_change, duration = STAGE_LENGTH_NIGHT})
+      CustomGameEventManager:Send_ServerToAllClients("stage_tick", {elapsed = GameRules:GetGameTime() - last_stage_change, duration = STAGE_LENGTH_NIGHT, stage = current_stage})
       return 0.1
     end
   })
   Timers:CreateTimer("primary_timer", {
     endTime = STAGE_LENGTH_NIGHT, 
     callback = function()
-      GameMode:ChangeStage(STAGE_DAWN, current_cycle + 1)
+      GameMode:ChangeStage(STAGE_DAWN, current_cycle)
     end
   })
 end
 
 function GameMode:EnterDawn()
   GameRules:SetTimeOfDay(0.5)
+
+  -- Clear particles
+  for _,player in pairs(GetPlayersOnTeam(DOTA_TEAM_GOODGUYS)) do
+    if player.target_particle then
+      ParticleManager:DestroyParticle(player.target_particle, false)
+      player.target_particle = nil
+    end
+  end
+  for _,faction in pairs(factional_target_particles) do
+    for _,particle in pairs(faction) do
+      ParticleManager:DestroyParticle(particle, false)
+    end
+  end
+  factional_target_particles = {}
+
   -- Action resolution begins.
   -- Start by adding things on the pre-resolution stack (mainly factional kills) to the night actions table.
   for name,details in pairs(pre_resolution_stack) do
@@ -257,35 +344,53 @@ function GameMode:EnterDawn()
     end
   end
 
+  -- Add intrinsic modifiers that might have been removed.
+  for _,hero in pairs(HeroList:GetAllHeroes()) do
+    for i = 0,hero:GetAbilityCount() - 1 do
+      local ability = hero:GetAbilityByIndex(i)
+      if ability then
+        local intrinsic = ability:GetIntrinsicModifierName()
+        if intrinsic and not hero:HasModifier(intrinsic) then
+          hero:AddNewModifier(hero, hero:GetAbilityByIndex(i), intrinsic, {})
+        end
+      end
+    end
+  end
+
   local events = {}
   local results = {}
+  local result_callbacks = {}
 
   -- This action resolution basically adheres to Natural Action Resolution:
   -- http://wiki.mafiascum.net/index.php?title=Natural_Action_Resolution
 
   -- Loop through night actions... possibly several times depending on the complexity of the setup.
   while next(night_actions) do
-    print("Top level while loop")
+    --print("Top level while loop")
     local actions_checked = 0
     local actions_skipped = 0
     -- Loop through each night action.
     for player,ability in pairs(night_actions) do
-      print("Main loop through actions")
-      print("Checking " .. player:GetPlayerID() .. "'s use of " .. ability:GetName())
+      --print("Main loop through actions")
+      --print("+ Checking " .. player:GetPlayerID() .. "'s use of " .. ability:GetName())
       actions_checked = actions_checked + 1
       -- Configure skip types based on the action being checked.
       -- For example, if we're checking to resolve a kill, we need to make sure that there is not a pending
       -- protect action on its target that hasn't been resolved. We also need to make sure that there aren't pending
       -- blocks, redirects, or other relevant acitons on the actor.
       local skip = false
-      local skip_if_pending_on_actor = {ACTION_TYPE_BLOCK = true}
+      local skip_if_pending_on_actor = {[ACTION_TYPE_BLOCK] = true}
       local skip_if_pending_on_target = {}
       if ability.action_types[ACTION_TYPE_KILL] then
         skip_if_pending_on_target[ACTION_TYPE_PROTECT] = true
       end
       if ability.action_types[ACTION_TYPE_BLOCK] then
-        skip_if_pending_on_target[ACTION_TYPE_BLOCK] = nil
+        skip_if_pending_on_actor[ACTION_TYPE_BLOCK] = nil
       end
+      --print("+ Will skip if we find these types on actor:")
+      --PrintTable(skip_if_pending_on_actor)
+      --print("+ Will skip if we find these types on target:")
+      --PrintTable(skip_if_pending_on_target)
       
       -- Skip this action if the target has one of the skip types we decided on above.
       for actiontype,v in pairs(skip_if_pending_on_target) do
@@ -297,8 +402,10 @@ function GameMode:EnterDawn()
       end
 
       -- Skip this action if the actor has one of the skip types we decided on above.
+      --print("+ Checking actor skips")
       for actiontype,v in pairs(skip_if_pending_on_actor) do
         for pplayer,pability in pairs(night_actions) do
+          --print("+ Checking actiontype " .. actiontype .. " against " .. pability:GetAbilityName() .. " against target " .. pability.target:GetPlayerID())
           if pability.target == player and pability.action_types[actiontype] then
             skip = true
           end
@@ -306,13 +413,22 @@ function GameMode:EnterDawn()
       end
 
       if not skip then
-        print("Resolving this action")
+        --print("+ Resolving this action")
         -- Resolve action, first checking to be sure that we aren't roleblocked.
-        if not player:GetAssignedHero():HasModifier("modifier_roleblocked") or ability_data[ability].IsUnblockable then
-          local resolution = ability:Resolve()  -- Defined in each ability.
+        if not player:GetAssignedHero():HasModifier("modifier_roleblocked") or ability_data[ability:GetAbilityName()].IsUnblockable then
+          resolved_targets[player] = ability.target
+          local success,resolution = pcall(ability.Resolve, ability)  -- Defined in each ability. Using pcall to not break everything if an ability has an error.
+          -- Remove charges from limited-use abilities
+          if ability_data[ability:GetAbilityName()].HasLimitedUses then
+            ability.uses_left = ability.uses_left - 1
+            if ability.uses_left == 0 then
+              ability:GetCaster():RemoveAbility(ability:GetAbilityName())
+            end
+          end
+
           if resolution then
-            print("Received resolution:")
-            PrintTable(resolution)
+            --print("+ Received resolution:")
+            --PrintTable(resolution)
             -- Three possible kinds of resolutions:
             -- RESOLUTION_TYPE_RESULT -- displayed to a single player at the start of the day, e.g. investigate
             -- RESOLUTION_TYPE_EVENT -- displayed publicly at the start of the day, e.g. nightkill
@@ -323,6 +439,11 @@ function GameMode:EnterDawn()
               else
                 results[player] = {resolution.event}
               end
+            elseif resolution.type == RESOLUTION_TYPE_RESULT_WITH_CALLBACK then
+              -- These actions can be resolved now, but we won't know the result of them until later.
+              -- For example, we can resolve a watcher's ability at any time, but we won't know for sure who targeted
+              -- the target until we're done.
+              result_callbacks[player] = resolution.callback
             else
               table.insert(events, resolution.followthrough)
             end
@@ -340,7 +461,7 @@ function GameMode:EnterDawn()
         end
         night_actions[player] = nil
       else
-        print("Skipping this action due to other pending actions that potentially affect it")
+        --print("+ Skipping this action due to other pending actions that potentially affect it")
         actions_skipped = actions_skipped + 1
       end
     end
@@ -352,12 +473,23 @@ function GameMode:EnterDawn()
       break
     end
   end
-  print("==========")
+
+  -- Do results with callbacks.
+  for player,resolution in pairs(result_callbacks) do
+    local result = resolution()
+    if results[player] then
+      table.insert(results[player], result)
+    else
+      results[player] = {result}
+    end
+  end
+
+--[[  print("==========")
   print("Events:")
   PrintTable(events)
   print("Results:")
   PrintTable(results)
-  print("==========")
+  print("==========")  ]]
 
   -- Send results to players.
   for player,tbl in pairs(results) do
@@ -377,8 +509,7 @@ function GameMode:EnterDawn()
           return 5
         end
       else
-        -- Cock a doodle doo!
-        GameMode:ChangeStage(STAGE_DAY, current_cycle)
+        GameMode:ChangeStage(STAGE_DAY, current_cycle + 1)
       end
     end
   })
@@ -393,18 +524,20 @@ function GameMode:EnterDay()
     for j,modifier in pairs(mafia_game_modifiers) do
       hero:RemoveModifierByName(modifier)
     end
+    hero:RemoveModifierByName("modifier_sleeping")
   end
 
   Timers:CreateTimer("stage_tick_timer", {
     endTime = 0.25,
     callback = function()
-      CustomGameEventManager:Send_ServerToAllClients("stage_tick", {elapsed = GameRules:GetGameTime() - last_stage_change, duration = STAGE_LENGTH_DAY})
+      CustomGameEventManager:Send_ServerToAllClients("stage_tick", {elapsed = GameRules:GetGameTime() - last_stage_change, duration = STAGE_LENGTH_DAY, stage = current_stage})
       return 0.25
     end
   })
   Timers:CreateTimer("primary_timer", {
     endTime = STAGE_LENGTH_DAY,
     callback = function()
+      CustomGameEventManager:Send_ServerToAllClients("deadline_reached", {})
       GameMode:ChangeStage(STAGE_TWILIGHT, current_cycle, {})
     end
   })
@@ -477,7 +610,6 @@ function GameMode:VictoryFor(alignment)
         alignment = GameMode:GetPlayerAlignment(player)
       }
     end
-    PrintTable(event)
     CustomNetTables:SetTableValue("endgame", "data", event)
   end)
 end
@@ -504,12 +636,19 @@ function GameMode:SendRoleToClient(ev)
     alignment = alignment
   }
 
+  local allies = {}
   if alignment == ALIGNMENT_MAFIA or alignment == ALIGNMENT_WEREWOLVES then
     local thisalign = GameMode:GetAllPlayersWithAlignment(alignment)
-    local allies = {}
     for k,p in pairs(thisalign) do
       if p ~= player then
-        table.insert(allies, p:GetPlayerID())
+        allies[p:GetPlayerID()] = roles[p]
+      end
+    end
+    response.allies = allies
+  elseif roles[player] == "mason" then
+    for p,role in pairs(roles) do
+      if role == "mason" and player ~= p then
+        allies[p:GetPlayerID()] = roles[p]
       end
     end
     response.allies = allies
@@ -538,6 +677,9 @@ function GameMode:GetFlip(playerid)
 end
 
 function GameMode:Nightkill(player)
+  if player:GetAssignedHero():HasModifier("modifier_bodyguarded") then
+    player = player:GetAssignedHero():FindModifierByName("modifier_bodyguarded"):GetCaster():GetPlayerOwner()
+  end
   GameMode:FocusCameras(player:GetAssignedHero())
   Timers:CreateTimer(1, function()
     CustomGameEventManager:Send_ServerToAllClients("nightkill", {player = player:GetPlayerID(), role = roles[player], alignment = GameMode:GetPlayerAlignment(player)})
@@ -547,6 +689,13 @@ function GameMode:Nightkill(player)
     hero:EmitSound("Hero_PhantomAssassin.CoupDeGrace")
     hero:ForceKill(false)
     GameMode:FocusCameras(nil)
+    CustomNetTables:SetTableValue("graveyard", tostring(player:GetPlayerID()), {
+      role = roles[player],
+      alignment = GameMode:GetPlayerAlignment(player),
+      death_type = "killed",
+      stage = STAGE_NIGHT,
+      cycle = current_cycle
+    })
   end)
 end
 

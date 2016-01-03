@@ -1,0 +1,62 @@
+.strong {
+	font-weight: bold;
+}
+.alignment-0 {
+	color: #1cd600;
+}
+.alignment-1 {
+	color: red;
+}
+.alignment-2 {
+	color: #637dff;
+}
+.alignment-3 {
+	color: #f389ff;
+}
+
+.scoreboard {
+	transform: translatey(-1000px);
+	transition: transform 0.2s ease-in-out 0.0s;
+	flow-children: down;
+	background-color: gradient( linear, 0% 0%, 0% 100%, from( #131617 ), to( #1C1C1C ) );
+	width: 650px;
+	margin-top: 100px;
+	border-top-right-radius: 10px;
+	border-bottom-right-radius: 10px;
+	padding: 15px;
+	max-height: 900px;
+	overflow: squish scroll;
+	border: 5px solid #4D4D4D;
+	box-shadow: fill #000000 2px 1px 3px 3px;
+	horizontal-align: center;
+}
+.scoreboard.visible {
+	transform: translatex(0px);
+}
+.scoreboard-section {
+	flow-children: down;
+	margin-bottom: 15px;
+}
+.scoreboard-section-header {
+	text-transform: uppercase;
+	font-size: 40px;
+	margin-bottom: 10px;
+	width: 100%;
+}
+.scoreboard-section-body {
+	flow-children: down;
+}
+.scoreboard-player {
+	flow-children: right;
+	margin-bottom: 7px;
+}
+.scoreboard-player Label {
+	font-size: 28px;
+	vertical-align: center;
+	margin: 0 0 0 20px;
+}
+.scoreboard-player DOTAHeroImage {
+	box-shadow: fill #111111 3px 3px 5px 8px;
+	width: 76px;
+	height: 43px;
+}

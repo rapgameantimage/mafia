@@ -2,6 +2,7 @@ if ($.GetContextPanel().GetParent().paneltype === "DOTACustomUITypeContainer") {
 // Root-level rolecard = player's rolecard.
 
 	function OnDistributeRole(ev) {
+		$.Msg(ev) 
 		var context = $.GetContextPanel()
 		context.FindChildrenWithClassTraverse("rolecard-rolename")[0].text = $.Localize(ev.role)
 		context.FindChildrenWithClassTraverse("rolecard-description")[0].text = $.Localize(ev.role + "_description")
@@ -11,7 +12,7 @@ if ($.GetContextPanel().GetParent().paneltype === "DOTACustomUITypeContainer") {
 			var allies_remaining = Object.keys(ev.allies).length
 			var allystr = ""
 			for (var i in ev.allies) {
-				allystr = allystr + Players.GetPlayerName(parseInt(ev.allies[i]))
+				allystr = allystr + Players.GetPlayerName(parseInt(i)) + " (" + $.Localize(ev.allies[i]) + ")"
 				allies_remaining = allies_remaining - 1
 				if (allies_remaining > 1) { 
 					allystr = allystr + ", " 
@@ -58,4 +59,4 @@ function HideRolecard() {
 var ALIGNMENT_TOWN = 0
 var ALIGNMENT_MAFIA = 1
 var ALIGNMENT_WEREWOLVES = 2
-var ALIGNMENT_SERIAL_KILLER = 3 
+var ALIGNMENT_SERIAL_KILLER = 3

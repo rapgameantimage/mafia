@@ -240,7 +240,9 @@ function GameMode:OnEntityKilled( keys )
     killerAbility = EntIndexToHScript( keys.entindex_inflictor )
   end
 
-  GameMode:CheckVictory()
+  if killedUnit:IsHero() then
+    GameMode:CheckVictory()
+  end
 end
 
 

@@ -12,15 +12,15 @@ function mafia_kill:CastFilterResultTarget(target)
 end
 
 function mafia_kill:GetCustomCastErrorTarget(target)
-	if target == self:GetCaster() then
+	if GameMode:GetPlayerAlignment(target:GetPlayerOwner()) == GameMode:GetPlayerAlignment(self:GetCaster():GetPlayerOwner()) then
 		return "#dota_hud_error_cant_cast_on_ally"
 	else
-		return GameMode:GenericAbilityCastError(self)
+		return GameMode:GenericAbilityCastError(self, target)
 	end
 end
 
-function mafia_kill:OnSpellStart()
-	self.target = self:GetCursorTarget():GetPlayerOwner()
+function mafia_kill:UseAbility(target)
+	self.target = target:GetPlayerOwner()
 	-- Place this on the night action pre-resolution stack
 	pre_resolution_stack.mafia_kill = {
 		killer = self:GetCaster():GetPlayerOwner(),
@@ -32,6 +32,7 @@ function mafia_kill:Resolve()
 	if not self.target:GetAssignedHero():HasModifier("modifier_protected") then
 		return {
 			type = RESOLUTION_TYPE_EVENT,
+			target = self.target,
 			followthrough = function()
 				GameMode:Nightkill(self.target)
 				self.target = nil

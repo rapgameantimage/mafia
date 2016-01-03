@@ -29,18 +29,35 @@
 	"was_an"	"was an"
 	"a"	"a"
 	"was_nightkilled"	"was killed in the night"
+	"was_daykilled_by"	"was killed in broad daylight by"
 	"close_button"	"close [x]"
 	"result_header"	 "In the night..."
+	"no_result"		"Your night action was not successful."
+	"no_result_explanation"	"You are seeing this message because you took an action which would normally display a result but which did not succeed (perhaps because you were roleblocked, perhaps because your target was unreachable, or perhaps for some other reason)."
+	"no_lynch"			"no lynch"
+	"no_lynch_reached"	"A majority of players voted not to lynch."
+	"deadline_reached"	"The day ended with nobody receiving a majority."
 
 	"you_targeted"	"You targeted:"
 	"result"		"Result:"
 	"guilty"		"Guilty"
 	"innocent"		"Innocent"
+	"watch_nobody"	"was not targeted by anyone."
+	"was_targeted_by"	"was targeted by"
+
+	"load_more"		"Load more"
+	"chat_log"		"Chat log"
+	"messages_warning"	"Loading too many messages can cause performance issues"
+
+	"living_players_header"	"The Living"
+	"graveyard_header"	"The Deceased"
 
 	"win_condition_0"	"You win when all threats to the town are eliminated."
 	"win_condition_1"	"You win when the mafia comprise 50% or more of the town."
 	"win_condition_2"	"You win when the werewolves comprise 50% or more of the town."
 	"win_condition_3"	"You win when everyone else is dead."
+
+	// ROLES
 
 	"townie"	"Townsperson"
 	"townie_description"	"You are an innocent townsperson with no special powers other than your vote. Use it wisely to find the mafia!"
@@ -53,4 +70,55 @@
 
 	"goon"		"Mafia Goon"
 	"goon_description"		"You are a member of the mafia. Each night, you or one of your allies can choose a target to kill. If more than one of you picks a target, only the last target will be killed."
+
+	"vigilante"	"Vigilante"
+	"vigilante_description"	"Once per night, you can choose another player to kill."
+
+	"roleblocker"	"Roleblocker"
+	"roleblocker_description"	"Once per night, you can choose a target to block from using their abilities. You can't roleblock people with roleblocking abilities (which also means that you can't be roleblocked)."
+
+	"jailkeeper"	"Jailkeeper"
+	"jailkeeper_description"	"Once per night, you can choose a target to jail, protecting them from kills but also blocking them from using any abilities. This won't block them from using other roleblocking abilities."
+
+	"tracker"	"Tracker"
+	"tracker_description"	"Once per night, you can choose another player to learn who they targeted that night (if anyone)."
+
+	"godfather"	"Mafia Godfather"
+	"godfather_description"	"You are a member of the mafia, but if you are investigated at night, the investigator will receive a result of 'not mafia'. Also, each night, you or one of your allies can choose a target to kill. If more than one of you picks a target, only the last target will be killed."
+
+	"watcher"	"Watcher"
+	"watcher_description"	"Once per night, you can choose a target to watch. You will learn who else targeted them that night, if anyone."
+
+	"mafia_roleblocker"	"Mafia Roleblocker"
+	"mafia_roleblocker_description"	"You are a member of the mafia. Each night, you or one of your allies can choose a target to kill. If more than one of you picks a target, only the last target will be killed. You also have a roleblocking ability that can prevent your target from using any abilities, but you can't roleblock and kill on the same night."
+
+	"one_shot_doctor"	"One-Shot Doctor"
+	"one_shot_doctor_description"	"At night, you can target a player to protect them from being killed. You can only do this once."
+
+	"two_shot_doctor"	"Two-Shot Doctor"
+	"two_shot_doctor_description"	"At night, you can target a player to protect them from being killed. You can only do this twice."
+
+	"one_shot_vigilante"	"One-Shot Vigilante"
+	"one_shot_vigilante_description"	"At night, you can target another player to kill them. You can only do this once."
+
+	"two_shot_vigilante"	"Two-Shot Vigilante"
+	"two_shot_vigilante_description"	"At night, you can target another player to kill them. You can only do this twice."
+
+	"bodyguard"	"Bodyguard"
+	"bodyguard_description"	"At night, you can target a player to guard them with your life; if they would have died, you will die in their place."
+
+	"one_shot_dayvig"		"One-Shot Day Vigilante"
+	"one_shot_dayvig_description"	"You can target a player during the day to kill them. Because this happens in broad daylight, everyone will see you do it. You can only do this once."
+
+	"ironskinned_townie"	"Ironskinned Townsperson"
+	"ironskinned_townie_description"	"You can't be nightkilled. Otherwise, you are a normal townsperson with no active abilities besides your vote."
+
+	"mason"			"Mason"
+	"mason_description"		"You are a mason, and you know your fellow masons to be aligned with the town. Otherwise, you have no special abilities besides your vote."
+
+	"one_shot_cop"			"One-Shot Cop"
+	"one_shot_cop_description"		"At night, you can choose another player to investigate. You will be informed whether they are part of the town or a hostile faction. You can only do this once."
+
+	"two_shot_cop"			"Two-Shot Cop"
+	"two_shot_cop_description"		"At night, you can choose another player to investigate. You will be informed whether they are part of the town or a hostile faction. You can only do this once."
 }
